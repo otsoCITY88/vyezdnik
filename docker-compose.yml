@@ -1,0 +1,65 @@
+# Локальный тест production-сборки.
+# В Coolify этот файл можно использовать напрямую (Application → Docker Compose).
+#
+# Запуск локально:
+#   docker compose up --build
+#   open http://localhost:3030/login
+#
+# Остановка с сохранением БД и стораджа:
+#   docker compose down       (volumes сохраняются)
+# Полный сброс:
+#   docker compose down -v    (удалит и volumes)
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vyezdnik:latest
+    container_name: vyezdnik
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    environment:
+      NODE_ENV: production
+      DATABASE_FILE: /app/data/prod.db
+      STORAGE_DIR: /app/storage
+      SEED_ON_INIT: "true"               # засеять демо-данными при первом запуске
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-please-openssl-rand-base64-32}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3030}
+      AUTH_TRUST_HOST: "true"
+      # Опциональные интеграции — пробрось при необходимости через .env / Coolify Env
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-4-7}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-vyezdnik@local}
+      DEV_FAKE_SEND: ${DEV_FAKE_SEND:-true}
+      IMAP_HOST: ${IMAP_HOST:-}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_SECURE: ${IMAP_SECURE:-true}
+      IMAP_USER: ${IMAP_USER:-}
+      IMAP_PASS: ${IMAP_PASS:-}
+      IMAP_FROM_ALLOWLIST: ${IMAP_FROM_ALLOWLIST:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:noreply@vyezdnik.local}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_DEFAULT_CHAT: ${TELEGRAM_DEFAULT_CHAT:-}
+      CRON_DAILY_DIGEST: ${CRON_DAILY_DIGEST:-0 9 * * *}
+    volumes:
+      - vyezdnik_data:/app/data         # БД (sqlite файл)
+      - vyezdnik_storage:/app/storage   # сгенерированные .docx, фото, ЭДО-пакеты
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3030/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  vyezdnik_data:
+  vyezdnik_storage:

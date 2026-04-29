@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>РКС·Выезд — кликабельный прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,200..900,0..100,0..1;1,9..144,200..900,0..100,0..1&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@300..700&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --paper:        #F7F3EA;
+    --paper-2:      #EFE9DA;
+    --paper-edge:   #E5DDC9;
+    --ink:          #14181F;
+    --ink-2:        #2B313B;
+    --muted:        #7E776A;
+    --line:         #D8CFB9;
+    --line-soft:    #ECE4D0;
+    --amber:        #B26314;
+    --amber-bg:     #F2D9A8;
+    --bordeaux:     #6B1F2A;
+    --bordeaux-bg:  #EFC9C5;
+    --moss:         #4E5C39;
+    --moss-bg:      #D8DBBA;
+    --indigo:       #1F2A6B;
+  }
+  html, body { background: var(--paper); color: var(--ink); }
+  body {
+    font-family: 'Instrument Sans', system-ui, sans-serif;
+    font-feature-settings: "ss01", "ss02", "cv11";
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, rgba(178,99,20,.06), transparent 60%),
+      radial-gradient(900px  500px at -10% 110%, rgba(31,42,107,.05), transparent 60%);
+  }
+  .display { font-family: 'Fraunces', 'Newsreader', serif; font-feature-settings: "ss01" 1, "ss02" 1; }
+  .read    { font-family: 'Newsreader', 'Fraunces', serif; }
+  .mono    { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: "ss02"; }
+  .micro   { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+  .micro-2 { font-size: 10px; letter-spacing: .2em;  text-transform: uppercase; }
+  .ruler   { height: 1px; background: linear-gradient(90deg, transparent, var(--line) 10%, var(--line) 90%, transparent); }
+  .frame   { border: 1px solid var(--line); background: var(--paper); }
+  .frame-soft { border: 1px solid var(--line-soft); background: var(--paper); }
+  .ink     { color: var(--ink); }
+  .muted   { color: var(--muted); }
+  .amber   { color: var(--amber); }
+  .bordeaux{ color: var(--bordeaux); }
+  .moss    { color: var(--moss); }
+  .bg-paper{ background: var(--paper); }
+  .bg-paper2{ background: var(--paper-2); }
+
+  /* sidebar */
+  .nav-item { padding: 8px 12px; display: flex; align-items: center; gap: 12px; color: var(--ink-2); border-left: 2px solid transparent; cursor:pointer; }
+  .nav-item:hover { background: var(--paper-2); }
+  .nav-item.active { color: var(--ink); background: var(--paper-2); border-left-color: var(--ink); }
+  .nav-item .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--muted); }
+  .nav-item.active .dot { background: var(--bordeaux); }
+
+  /* badges */
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    border: 1px solid var(--line); background: var(--paper-2); color: var(--ink-2);
+  }
+  .pill.amber    { background: var(--amber-bg);    border-color: #E2BB7E; color: #6F3D08; }
+  .pill.bordeaux { background: var(--bordeaux-bg); border-color: #DCA9A4; color: var(--bordeaux); }
+  .pill.moss     { background: var(--moss-bg);     border-color: #BFC79A; color: #2E3823; }
+  .pill.indigo   { background: #D7DAEE;            border-color: #B8BFE0; color: var(--indigo); }
+  .pill.ghost    { background: transparent; }
+
+  /* buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 14px; font-size: 13px; line-height: 1; cursor: pointer;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+    transition: transform .12s ease, background .15s ease;
+  }
+  .btn:hover { background: var(--ink-2); }
+  .btn:active{ transform: translateY(1px); }
+  .btn.ghost { background: transparent; color: var(--ink); }
+  .btn.ghost:hover { background: var(--paper-2); }
+  .btn.amber { background: var(--amber); border-color: var(--amber); color: var(--paper); }
+  .btn.bordeaux { background: var(--bordeaux); border-color: var(--bordeaux); color: var(--paper); }
+
+  /* dropdown */
+  .menu {
+    position: absolute; top: calc(100% + 6px); right: 0; min-width: 320px;
+    background: var(--paper); border: 1px solid var(--line); box-shadow: 8px 8px 0 rgba(20,24,31,.06);
+    z-index: 30;
+  }
+  .menu .item { padding: 10px 14px; display: grid; grid-template-columns: 1fr auto; gap: 8px; cursor: pointer; }
+  .menu .item:hover { background: var(--paper-2); }
+  .menu .item.locked { color: var(--muted); cursor: not-allowed; }
+
+  /* timeline */
+  .tl { position: relative; padding-left: 30px; }
+  .tl::before { content: ""; position: absolute; left: 11px; top: 4px; bottom: 4px; width: 1px; background: var(--line); }
+  .tl-node { position: relative; padding: 14px 0 18px 0; }
+  .tl-node::before {
+    content: ""; position: absolute; left: -25px; top: 22px;
+    width: 9px; height: 9px; border-radius: 999px; background: var(--paper);
+    border: 1.5px solid var(--ink);
+  }
+  .tl-node.amber::before    { border-color: var(--amber); background: var(--amber); }
+  .tl-node.bordeaux::before { border-color: var(--bordeaux); background: var(--bordeaux); }
+  .tl-node.moss::before     { border-color: var(--moss); background: var(--moss); }
+
+  /* table */
+  table.editorial { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.editorial thead th {
+    text-align: left; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
+    font-size: 10.5px; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line);
+  }
+  table.editorial tbody td { padding: 14px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  table.editorial tbody tr:hover { background: var(--paper-2); cursor: pointer; }
+
+  /* a4 letter preview */
+  .letter {
+    background: #FFFFFF;
+    color: #111111;
+    border: 1px solid var(--line);
+    font-family: 'Newsreader', 'Times New Roman', serif;
+    font-size: 11.5px;
+    line-height: 1.45;
+    padding: 28px 32px 38px 38px;
+    min-height: 540px;
+    box-shadow: 6px 6px 0 rgba(20,24,31,.06);
+    position: relative;
+    overflow: hidden;
+  }
+  .letter .var { background: #FFEFCF; padding: 0 3px; border-bottom: 1px dashed #B26314; color: #6F3D08; }
+  .letter .var-edit { background: #DCEAFE; border-color: #1F2A6B; color: #1F2A6B; }
+  .letter .stamp {
+    position: absolute; right: 30px; bottom: 60px;
+    transform: rotate(-7deg);
+    border: 2px solid var(--bordeaux); color: var(--bordeaux);
+    padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    opacity: .8; letter-spacing: .1em;
+  }
+  .letter .corner-fold {
+    position: absolute; top: 0; right: 0; width: 28px; height: 28px;
+    background: linear-gradient(225deg, var(--paper-2) 50%, transparent 50%);
+    border-left: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+
+  /* modal */
+  .backdrop {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(20, 24, 31, .55);
+    backdrop-filter: blur(2px);
+  }
+  .modal-card {
+    position: fixed; inset: 4% 6%; z-index: 51;
+    background: var(--paper); border: 1px solid var(--line);
+    box-shadow: 16px 16px 0 rgba(20,24,31,.18);
+    display: grid; grid-template-rows: auto 1fr auto;
+  }
+
+  /* inputs */
+  .field { display: grid; gap: 4px; }
+  .field label { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .field input, .field select, .field textarea {
+    background: var(--paper); border: 1px solid var(--line); padding: 9px 11px;
+    font-family: inherit; font-size: 13px; color: var(--ink); width: 100%;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: 2px solid var(--ink); outline-offset: -1px;
+  }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 12.5px; }
+  .check input { accent-color: var(--ink); }
+
+  /* misc */
+  .grid-bg {
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+  }
+  .kbd {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    border: 1px solid var(--line); padding: 2px 6px; background: var(--paper);
+    color: var(--muted);
+  }
+  .ribbon-demo {
+    position: fixed; right: -40px; top: 22px; transform: rotate(35deg);
+    background: var(--bordeaux); color: var(--paper);
+    padding: 4px 60px; font-size: 10px; letter-spacing: .25em; text-transform: uppercase;
+    z-index: 60; box-shadow: 0 2px 0 rgba(0,0,0,.15);
+  }
+
+  /* enter animations */
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .rise { animation: rise .35s ease both; }
+  .rise-1 { animation-delay: .04s; }
+  .rise-2 { animation-delay: .10s; }
+  .rise-3 { animation-delay: .16s; }
+  .rise-4 { animation-delay: .22s; }
+  .rise-5 { animation-delay: .28s; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="ribbon-demo">DEMO · MOCK</div>
+
+<div class="grid min-h-screen" style="grid-template-columns: 248px 1fr;">
+
+  <!-- ============================ SIDEBAR ============================ -->
+  <aside class="border-r" style="border-color: var(--line); background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);">
+    <div class="px-5 pt-6 pb-5 border-b" style="border-color: var(--line);">
+      <div class="display text-[28px] leading-none tracking-tight">
+        <span style="font-style: normal; font-weight: 600;">РКС</span><span class="muted">·</span><span style="font-style: italic; font-weight: 500;">Выезд</span>
+      </div>
+      <div class="micro-2 muted mt-2">Реестр обращений · МКД Мариуполь</div>
+    </div>
+
+    <div class="py-3">
+      <div class="micro-2 muted px-5 pb-2">Работа</div>
+      <div class="nav-item active" data-nav="dashboard">
+        <span class="dot"></span><span class="flex-1">Сегодня</span><span class="mono text-[11px] muted">⌘ 1</span>
+      </div>
+      <div class="nav-item" data-nav="cases">
+        <span class="dot"></span><span class="flex-1">Дела</span><span class="pill" style="padding: 1px 7px; font-size:10px;">42</span>
+      </div>
+      <div class="nav-item" data-nav="inbox">
+        <span class="dot"></span><span class="flex-1">Входящие</span><span class="pill amber" style="padding: 1px 7px; font-size:10px;">2</span>
+      </div>
+      <div class="nav-item" data-nav="outgoing">
+        <span class="dot"></span><span class="flex-1">Реестр исх.</span>
+      </div>
+      <div class="nav-item" data-nav="visits">
+        <span class="dot"></span><span class="flex-1">Выезды</span>
+      </div>
+
+      <div class="micro-2 muted px-5 pt-5 pb-2">Справочники</div>
+      <div class="nav-item" data-nav="dir-buildings"><span class="dot"></span><span class="flex-1">МКД</span></div>
+      <div class="nav-item" data-nav="dir-orgs"><span class="dot"></span><span class="flex-1">Контрагенты</span></div>
+      <div class="nav-item" data-nav="dir-tpl"><span class="dot"></span><span class="flex-1">Шаблоны</span></div>
+    </div>
+
+    <div class="absolute bottom-4 left-0 px-5 w-[248px]">
+      <div class="frame p-3 flex items-center gap-3">
+        <div class="display text-[18px] w-9 h-9 grid place-items-center" style="background: var(--ink); color: var(--paper);">МП</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] truncate">М.Ю. Пальков</div>
+          <div class="micro-2 muted truncate">Главный спец. по претензиям</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================ MAIN ============================ -->
+  <main class="relative">
+
+    <!-- top bar -->
+    <div class="sticky top-0 z-20 backdrop-blur" style="background: rgba(247,243,234,.85); border-bottom: 1px solid var(--line);">
+      <div class="flex items-center px-8 py-3 gap-4">
+        <div class="micro muted">РКС·Выезд / <span class="ink" id="bcrumb">Сегодня</span></div>
+        <div class="flex-1"></div>
+        <div class="frame px-3 py-1.5 flex items-center gap-2 text-[13px] muted" style="min-width: 320px;">
+          <span>Найти дело, объект, исх.№…</span>
+          <span class="flex-1"></span>
+          <span class="kbd">⌘ K</span>
+        </div>
+        <button class="btn ghost" onclick="show('inbox')"><span>Загрузить входящее</span></button>
+        <button class="btn" onclick="show('case')"><span>＋</span><span>Новое дело</span></button>
+      </div>
+    </div>
+
+    <!-- ===================== SCREEN: DASHBOARD ===================== -->
+    <section data-screen="dashboard" class="px-8 pt-8 pb-16">
+
+      <div class="flex items-end justify-between">
+        <div class="rise">
+          <div class="micro muted">Понедельник</div>
+          <h1 class="display mt-2 text-[68px] leading-[0.95] tracking-tight">
+            27 <span style="font-style: italic; font-weight: 300;">апреля</span> 2026
+          </h1>
+          <p class="read mt-3 text-[18px] max-w-[60ch]" style="color: var(--ink-2);">
+            У вас <span class="bordeaux font-semibold">5 горящих дел</span>, два непривязанных входящих от ППК «Единый Заказчик», одна комиссия в&nbsp;11:00 на пер.&nbsp;Аносова.
+          </p>
+        </div>
+        <div class="text-right rise rise-1">
+          <div class="micro muted">Реестр исх. · апрель</div>
+          <div class="display text-[40px] leading-none mt-2">02/<span class="mono">246</span></div>
+          <div class="micro-2 muted mt-1">след. номер автоматически</div>
+        </div>
+      </div>
+
+      <div class="ruler my-8"></div>
+
+      <!-- 4 widgets -->
+      <div class="grid gap-px" style="grid-template-columns: repeat(4, 1fr); background: var(--line);">
+        <!-- горящие сроки -->
+        <div class="bg-paper p-5 rise rise-1">
+          <div class="flex items-start justify-between">
+            <div class="micro muted">Горящие сроки</div>
+            <span class="pill bordeaux">⏱ 5</span>
+          </div>
+          <div class="display text-[44px] leading-none mt-3">5</div>
+          <div class="ruler my-4"></div>
+          <ul class="space-y-2.5 text-[13px]">
+            <li class="flex justify-between gap-3"><span class="truncate">Д‑2026‑0042 · Металлургов 45/9</span><span class="mono bordeaux">−3д</span></li>
+            <li class="flex justify-between gap-3"><span class="truncate">Д‑2026‑0040 · Московская 44</span><span class="mono amber">завтра</span></li>
+            <li class="flex justify-between gap-3"><span class="truncate">Д‑2026‑0038 · Сеченова 84</span><span class="mono amber">+1д</span></li>
+            <li class="flex justify-between gap-3"><span class="truncate">Д‑2026‑0036 · Карпинского 72</span><span class="mono">+2д</span></li>
+          </ul>
+          <button class="btn ghost mt-4 text-[12px]" onclick="show('cases')">Открыть реестр →</button>
+        </div>
+
+        <!-- входящие без дела -->
+        <div class="bg-paper p-5 rise rise-2">
+          <div class="flex items-start justify-between">
+            <div class="micro muted">Входящие без дела</div>
+            <span class="pill amber">📥 2</span>
+          </div>
+          <div class="display text-[44px] leading-none mt-3">2</div>
+          <div class="ruler my-4"></div>
+          <ul class="space-y-2.5 text-[13px]">
+            <li class="grid" style="grid-template-columns: 1fr auto;">
+              <span class="truncate mono">ППК‑1‑381/2026</span>
+              <span class="muted">14.01</span>
+              <span class="muted text-[12px] col-span-2 truncate">Зуева Н.Н. · 60 лет СССР, 12</span>
+            </li>
+            <li class="grid" style="grid-template-columns: 1fr auto;">
+              <span class="truncate mono">ППК‑1‑32475/2025</span>
+              <span class="muted">12.12</span>
+              <span class="muted text-[12px] col-span-2 truncate">— · ул. Московская, 44</span>
+            </li>
+          </ul>
+          <button class="btn ghost mt-4 text-[12px]" onclick="show('case')">Завести дело →</button>
+        </div>
+
+        <!-- к ответу в ППК -->
+        <div class="bg-paper p-5 rise rise-3">
+          <div class="flex items-start justify-between">
+            <div class="micro muted">К ответу в ППК</div>
+            <span class="pill moss">✉ 3</span>
+          </div>
+          <div class="display text-[44px] leading-none mt-3">3</div>
+          <div class="ruler my-4"></div>
+          <ul class="space-y-2.5 text-[13px]">
+            <li class="flex justify-between gap-3"><span class="truncate">Д‑2026‑0033 · Строителей 32</span><span class="mono moss">готово</span></li>
+            <li class="flex justify-between gap-3"><span class="truncate">Д‑2026‑0029 · Аносова 13</span><span class="mono moss">готово</span></li>
+            <li class="flex justify-between gap-3"><span class="truncate">Д‑2026‑0024 · Карпинского 64</span><span class="mono moss">готово</span></li>
+          </ul>
+          <button class="btn ghost mt-4 text-[12px]">Сгенерировать пачкой →</button>
+        </div>
+
+        <!-- сегодня выезды -->
+        <div class="bg-paper p-5 rise rise-4">
+          <div class="flex items-start justify-between">
+            <div class="micro muted">Сегодня выезды</div>
+            <span class="pill indigo">🛣 1</span>
+          </div>
+          <div class="display text-[44px] leading-none mt-3">1</div>
+          <div class="ruler my-4"></div>
+          <ul class="space-y-3 text-[13px]">
+            <li>
+              <div class="flex justify-between"><span class="mono">11:00</span><span class="micro-2 muted">Повторный осмотр</span></div>
+              <div class="mt-0.5">пер. Аносова, 13, кв. 12</div>
+              <div class="muted text-[12px]">Комиссия: РКС‑НР, ООО «АудитПроект»</div>
+            </li>
+          </ul>
+          <button class="btn ghost mt-4 text-[12px]">Карточка выезда →</button>
+        </div>
+      </div>
+
+      <!-- recent cases table -->
+      <div class="mt-12 rise rise-5">
+        <div class="flex items-end justify-between mb-4">
+          <div>
+            <div class="micro muted">Недавние дела</div>
+            <h2 class="display text-[28px] mt-1">В работе сейчас</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="pill ghost">Все 42</div>
+            <div class="pill ghost">Просрочено 5</div>
+            <div class="pill ghost">К ответу 3</div>
+          </div>
+        </div>
+
+        <div class="frame">
+          <table class="editorial">
+            <thead>
+              <tr>
+                <th>№</th>
+                <th>Объект</th>
+                <th>СПО</th>
+                <th>Состояние</th>
+                <th>Дедлайн</th>
+                <th>Ответственный</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr onclick="show('case')">
+                <td class="mono">Д‑2026‑0042</td>
+                <td>пр. Металлургов, 45/9, кв. 63 <div class="micro-2 muted mt-1">Павличенко-Янатьева Ю.И.</div></td>
+                <td>АО РКК</td>
+                <td><span class="pill bordeaux">Ожидание устранения</span></td>
+                <td><span class="mono bordeaux">20.12.2025 · −3д</span></td>
+                <td>М.Ю. Пальков</td>
+              </tr>
+              <tr>
+                <td class="mono">Д‑2026‑0040</td>
+                <td>ул. Московская, 44, кв. 19 <div class="micro-2 muted mt-1">обращение из ППК ЕЗ</div></td>
+                <td>ООО «АудитПроект»</td>
+                <td><span class="pill amber">Запрос в СПО отправлен</span></td>
+                <td><span class="mono amber">28.04.2026 · завтра</span></td>
+                <td>М.Ю. Пальков</td>
+              </tr>
+              <tr>
+                <td class="mono">Д‑2026‑0038</td>
+                <td>ул. Сеченова, 84 · подъезд 2</td>
+                <td>МСК‑Гарант</td>
+                <td><span class="pill amber">Повторный выезд</span></td>
+                <td><span class="mono amber">29.04.2026</span></td>
+                <td>А.С. Горчаков</td>
+              </tr>
+              <tr>
+                <td class="mono">Д‑2026‑0036</td>
+                <td>ул. Карпинского, 72 · фасад</td>
+                <td>МСК‑Гарант</td>
+                <td><span class="pill">Акт Н/Д составлен</span></td>
+                <td><span class="mono">30.04.2026</span></td>
+                <td>А.С. Горчаков</td>
+              </tr>
+              <tr>
+                <td class="mono">Д‑2026‑0033</td>
+                <td>ул. Строителей, 32 <div class="micro-2 muted mt-1">все замечания устранены</div></td>
+                <td>ООО «СпецСнабТранс»</td>
+                <td><span class="pill moss">Готов ответ в ППК</span></td>
+                <td class="muted">—</td>
+                <td>М.Ю. Пальков</td>
+              </tr>
+              <tr>
+                <td class="mono">Д‑2026‑0029</td>
+                <td>пер. Аносова, 13, кв. 12</td>
+                <td>ООО «АудитПроект»</td>
+                <td><span class="pill moss">Устранение зафиксировано</span></td>
+                <td class="muted">—</td>
+                <td>М.Ю. Пальков</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SCREEN: CASES (LIST) ===================== -->
+    <section data-screen="cases" hidden class="px-8 pt-8 pb-16">
+      <div class="flex items-end justify-between">
+        <div>
+          <div class="micro muted">Реестр</div>
+          <h1 class="display text-[52px] leading-none mt-2 tracking-tight">Дела</h1>
+          <p class="read mt-2 text-[16px] muted">42 активных, 5 просрочено, 130 закрыто за 2026 год</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn ghost">Экспорт .xlsx</button>
+          <button class="btn" onclick="show('case')"><span>＋</span> Новое дело</button>
+        </div>
+      </div>
+
+      <div class="ruler my-7"></div>
+
+      <div class="flex items-center gap-2 mb-4 flex-wrap">
+        <span class="micro muted mr-2">Фильтр:</span>
+        <button class="pill" style="background: var(--ink); color: var(--paper); border-color: var(--ink);">Все · 42</button>
+        <button class="pill">Мои · 14</button>
+        <button class="pill bordeaux">Просрочено · 5</button>
+        <button class="pill amber">К выезду · 7</button>
+        <button class="pill moss">К ответу в ППК · 3</button>
+        <button class="pill ghost">Закрытые</button>
+        <span class="flex-1"></span>
+        <button class="pill ghost">Сортировка: Дедлайн ↑</button>
+      </div>
+
+      <div class="frame">
+        <table class="editorial">
+          <thead>
+            <tr>
+              <th>№ дела</th>
+              <th>Объект · заявитель</th>
+              <th>СПО</th>
+              <th>Этап</th>
+              <th>Входящее</th>
+              <th>Дедлайн</th>
+              <th>Ответств.</th>
+            </tr>
+          </thead>
+          <tbody id="casesBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== SCREEN: CASE DETAIL ===================== -->
+    <section data-screen="case" hidden class="px-8 pt-8 pb-16">
+      <div class="flex items-center gap-2 micro muted">
+        <span class="cursor-pointer hover:underline" onclick="show('cases')">Дела</span>
+        <span>›</span>
+        <span class="ink">Д‑2026‑0042</span>
+      </div>
+
+      <div class="flex items-start justify-between mt-3 gap-6">
+        <div class="rise">
+          <div class="micro muted">Дело № <span class="mono ink">Д‑2026‑0042</span> · открыто 21.10.2025</div>
+          <h1 class="display text-[56px] leading-[1] mt-2 tracking-tight">
+            пр. Металлургов 45/9, <span style="font-style: italic; font-weight: 400;">кв. 63</span>
+          </h1>
+          <div class="flex items-center gap-3 mt-4">
+            <span class="pill bordeaux">⏱ Ожидание устранения · СПО</span>
+            <span class="micro muted">Ближайший дедлайн</span>
+            <span class="mono bordeaux text-[14px]">20.12.2025 · просрочка 3 дня</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-end gap-2 rise rise-1">
+          <div class="relative">
+            <button class="btn bordeaux" id="genBtn">＋ Сгенерировать <span class="opacity-70">▾</span></button>
+            <div class="menu hidden" id="genMenu">
+              <div class="micro-2 muted px-3.5 py-2 border-b" style="border-color: var(--line-soft);">Доступно для текущего этапа</div>
+              <div class="item" onclick="openModal('generate')">
+                <div>
+                  <div>T6 · Письмо в СПО на основании Акта Н/Д</div>
+                  <div class="micro-2 muted mt-0.5">для АО РКК · по договору № РР‑166/1122/28</div>
+                </div>
+                <span class="mono muted">⏎</span>
+              </div>
+              <div class="item" onclick="openModal('generate')">
+                <div>
+                  <div>T7 · Письмо «О гарантиях субподрядчика»</div>
+                  <div class="micro-2 muted mt-0.5">досудебная претензия · ст. 723 ГК РФ</div>
+                </div>
+                <span class="mono muted">G</span>
+              </div>
+              <div class="item">
+                <div>
+                  <div>T8 · Претензия за непредоставление информации</div>
+                  <div class="micro-2 muted mt-0.5">штраф 150 000 ₽ · п. 8.17</div>
+                </div>
+              </div>
+              <div class="item locked">
+                <div>
+                  <div>T5 · Ответ в ППК ЕЗ</div>
+                  <div class="micro-2 muted mt-0.5">недоступно: устранение не зафиксировано</div>
+                </div>
+                <span class="mono">🔒</span>
+              </div>
+              <div class="border-t" style="border-color: var(--line-soft);"></div>
+              <div class="item">
+                <div>＋ Зафиксировать выезд</div><span class="mono muted">V</span>
+              </div>
+              <div class="item">
+                <div>＋ Загрузить ответ от СПО</div><span class="mono muted">U</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn ghost text-[12px]">Закрыть дело</button>
+        </div>
+      </div>
+
+      <div class="ruler my-8"></div>
+
+      <div class="grid gap-8" style="grid-template-columns: 360px 1fr;">
+
+        <!-- ============== passport ============== -->
+        <div class="rise">
+          <div class="frame p-5">
+            <div class="micro muted">Паспорт дела</div>
+            <div class="ruler my-4"></div>
+
+            <dl class="grid gap-4">
+              <div>
+                <dt class="micro-2 muted">Заявитель</dt>
+                <dd class="mt-1">Павличенко‑Янатьева Ю.И.</dd>
+              </div>
+              <div>
+                <dt class="micro-2 muted">Объект</dt>
+                <dd class="mt-1">г. Мариуполь, пр. Металлургов, д. 45/9, кв. 63</dd>
+              </div>
+              <div>
+                <dt class="micro-2 muted">Субподрядчик</dt>
+                <dd class="mt-1">АО «Республиканская коммунальная компания»</dd>
+                <dd class="micro-2 muted mt-0.5">Зиаи Д.А. · ptogr@yandex.ru</dd>
+              </div>
+              <div>
+                <dt class="micro-2 muted">Договор</dt>
+                <dd class="mt-1 mono text-[13px]">№ РР‑166/1122/28 от 18.11.2022</dd>
+                <dd class="micro-2 muted mt-0.5">гарантии п. 7.20, 7.21 · устранение п. 8.10</dd>
+              </div>
+              <div>
+                <dt class="micro-2 muted">Входящее</dt>
+                <dd class="mt-1 mono text-[13px]">ППК‑1‑27290/2025 от 21.10.2025</dd>
+                <dd class="micro-2 muted mt-0.5">Прокуратура г. Мариуполя · повторное обращение</dd>
+              </div>
+              <div>
+                <dt class="micro-2 muted">Ответственный</dt>
+                <dd class="mt-1 flex items-center gap-2">
+                  <span class="display w-6 h-6 grid place-items-center text-[12px]" style="background: var(--ink); color: var(--paper);">МП</span>
+                  М.Ю. Пальков
+                </dd>
+              </div>
+            </dl>
+
+            <div class="ruler my-4"></div>
+            <div class="micro muted mb-2">Сроки</div>
+            <ul class="text-[12.5px] space-y-2">
+              <li class="flex justify-between"><span>Ответ СПО</span><span class="mono bordeaux">20.12.2025 · −3д</span></li>
+              <li class="flex justify-between"><span>Повторный выезд</span><span class="mono">07.01.2026</span></li>
+              <li class="flex justify-between muted"><span>Письмо «О гарантиях»</span><span class="mono">не выставлен</span></li>
+            </ul>
+          </div>
+
+          <div class="frame mt-6 p-5">
+            <div class="micro muted">Документы дела</div>
+            <div class="ruler my-4"></div>
+            <ul class="text-[13px] space-y-3">
+              <li class="flex justify-between gap-3">
+                <div>
+                  <div class="mono text-[12px] muted">02/4694 · 24.10.2025</div>
+                  <div>Письмо в СПО · Об устранении</div>
+                </div>
+                <span class="pill moss">отправлено</span>
+              </li>
+              <li class="flex justify-between gap-3">
+                <div>
+                  <div class="mono text-[12px] muted">АО МКД · 19.11.2025</div>
+                  <div>Акт осмотра МКД</div>
+                </div>
+                <span class="pill">подписан</span>
+              </li>
+              <li class="flex justify-between gap-3">
+                <div>
+                  <div class="mono text-[12px] muted">Акт Н/Д · 19.11.2025</div>
+                  <div>Акт о недостатках/дефектах</div>
+                </div>
+                <span class="pill">приложен</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ============== timeline ============== -->
+        <div class="rise rise-1">
+          <div class="flex items-center justify-between mb-4">
+            <div class="micro muted">Хронология</div>
+            <div class="flex items-center gap-2">
+              <button class="pill" style="background: var(--ink); color: var(--paper); border-color: var(--ink);">События</button>
+              <button class="pill ghost">Документы</button>
+              <button class="pill ghost">Выезды</button>
+            </div>
+          </div>
+
+          <div class="tl">
+            <div class="tl-node bordeaux">
+              <div class="flex items-baseline gap-3">
+                <span class="mono text-[12px] muted">17.12.2025</span>
+                <span class="pill bordeaux">просрочка</span>
+              </div>
+              <div class="mt-1.5 read text-[15px]">Дедлайн ответа от СПО истёк. Письмо <span class="mono">02/4694</span> от 24.10.2025 без ответа.</div>
+              <div class="mt-2 flex gap-2">
+                <button class="btn bordeaux text-[12px]" onclick="openModal('generate')">＋ Письмо «О гарантиях» (T7)</button>
+                <button class="btn ghost text-[12px]">＋ Зафиксировать выезд</button>
+              </div>
+            </div>
+
+            <div class="tl-node">
+              <div class="flex items-baseline gap-3">
+                <span class="mono text-[12px] muted">19.11.2025</span>
+                <span class="pill">выезд</span>
+              </div>
+              <div class="mt-1.5 read text-[15px]">Повторный комиссионный выезд: РКС‑НР, ГБУ «УТНКР МО», АО РКК. Замечания подтверждены, составлен <span class="underline">Акт о недостатках/дефектах</span>.</div>
+              <div class="micro-2 muted mt-2">Срок устранения по Акту Н/Д: <span class="mono ink">20.12.2025</span></div>
+            </div>
+
+            <div class="tl-node">
+              <div class="flex items-baseline gap-3">
+                <span class="mono text-[12px] muted">24.10.2025</span>
+                <span class="pill">отправлено</span>
+              </div>
+              <div class="mt-1.5 read text-[15px]">В адрес АО «РКК» направлено письмо <span class="mono">02/4694</span> «Об устранении замечаний» (T3) с приложением Акта осмотра МКД.</div>
+              <div class="micro-2 muted mt-2">Подписант: Д.Н. Щербаченя · Копия: ППК ЕЗ (М.М. Толмачев)</div>
+            </div>
+
+            <div class="tl-node moss">
+              <div class="flex items-baseline gap-3">
+                <span class="mono text-[12px] muted">23.10.2025</span>
+                <span class="pill">выезд · первичный</span>
+              </div>
+              <div class="mt-1.5 read text-[15px]">Комиссионное обследование. Составлен <span class="underline">Акт осмотра МКД</span> (T1). Зафиксированы дефекты внутр. конструктива.</div>
+            </div>
+
+            <div class="tl-node">
+              <div class="flex items-baseline gap-3">
+                <span class="mono text-[12px] muted">21.10.2025</span>
+                <span class="pill">входящее</span>
+              </div>
+              <div class="mt-1.5 read text-[15px]">Получено письмо ППК ЕЗ <span class="mono">ППК‑1‑27290/2025</span> с требованием прокуратуры г. Мариуполя по обращению Павличенко‑Янатьевой Ю.И.</div>
+              <div class="micro-2 muted mt-2">Дело создано автоматически из «Входящих»</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SCREEN: INBOX ===================== -->
+    <section data-screen="inbox" hidden class="px-8 pt-8 pb-16">
+      <div class="flex items-end justify-between">
+        <div>
+          <div class="micro muted">Входящие</div>
+          <h1 class="display text-[52px] leading-none mt-2 tracking-tight">Письма от ППК и СПО</h1>
+          <p class="read mt-2 text-[16px] muted">PDF‑ки от заказчика, ответы субподрядчиков, требования прокуратуры</p>
+        </div>
+        <button class="btn">＋ Загрузить файл</button>
+      </div>
+
+      <div class="ruler my-7"></div>
+
+      <div class="grid gap-6" style="grid-template-columns: 1fr 1fr;">
+        <div class="frame p-5">
+          <div class="flex items-center gap-3">
+            <div class="display text-[18px] w-9 h-9 grid place-items-center" style="background: var(--bordeaux); color: var(--paper);">PDF</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">12.12.2025_ППК‑1‑32475_Толмачев_Шарипов.pdf</div>
+              <div class="micro-2 muted mt-0.5">от ППК «Единый Заказчик» · 9 л. · 7.5 МБ</div>
+            </div>
+            <span class="pill amber">не привязано</span>
+          </div>
+          <div class="ruler my-4"></div>
+          <dl class="grid grid-cols-2 gap-3 text-[13px]">
+            <div><dt class="micro-2 muted">Исх. №</dt><dd class="mono mt-1">ППК‑1‑32475/2025</dd></div>
+            <div><dt class="micro-2 muted">Дата</dt><dd class="mono mt-1">12.12.2025</dd></div>
+            <div><dt class="micro-2 muted">Адресат</dt><dd class="mt-1">И.Р. Шарипов · ООО «РКС‑НР»</dd></div>
+            <div><dt class="micro-2 muted">Объект</dt><dd class="mt-1">ул. Московская, 44</dd></div>
+            <div class="col-span-2"><dt class="micro-2 muted">Источник</dt><dd class="mt-1">Мариупольский филиал Единого регионального фонда МКД ДНР</dd></div>
+          </dl>
+          <div class="ruler my-4"></div>
+          <div class="flex gap-2">
+            <button class="btn" onclick="show('case')">Создать дело →</button>
+            <button class="btn ghost">Привязать к существующему</button>
+          </div>
+        </div>
+
+        <div class="frame p-5">
+          <div class="flex items-center gap-3">
+            <div class="display text-[18px] w-9 h-9 grid place-items-center" style="background: var(--bordeaux); color: var(--paper);">PDF</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">11.12.2025_ППК‑1‑32215_Толмачев.pdf</div>
+              <div class="micro-2 muted mt-0.5">от ППК «Единый Заказчик» · 8 л. · 4.6 МБ</div>
+            </div>
+            <span class="pill amber">не привязано</span>
+          </div>
+          <div class="ruler my-4"></div>
+          <dl class="grid grid-cols-2 gap-3 text-[13px]">
+            <div><dt class="micro-2 muted">Исх. №</dt><dd class="mono mt-1">ППК‑1‑32215/2025</dd></div>
+            <div><dt class="micro-2 muted">Дата</dt><dd class="mono mt-1">11.12.2025</dd></div>
+            <div><dt class="micro-2 muted">Адресат</dt><dd class="mt-1">И.Р. Шарипов · ООО «РКС‑НР»</dd></div>
+            <div><dt class="micro-2 muted">Объект</dt><dd class="mt-1">ул. 60 лет СССР, 12, кв. 136/140/144</dd></div>
+            <div class="col-span-2"><dt class="micro-2 muted">Заявитель</dt><dd class="mt-1">Зуева Н.Н. (через Адм. ГО Мариуполь)</dd></div>
+          </dl>
+          <div class="ruler my-4"></div>
+          <div class="flex gap-2">
+            <button class="btn" onclick="show('case')">Создать дело →</button>
+            <button class="btn ghost">Привязать к существующему</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SCREEN: OUTGOING REGISTRY ===================== -->
+    <section data-screen="outgoing" hidden class="px-8 pt-8 pb-16">
+      <div class="flex items-end justify-between">
+        <div>
+          <div class="micro muted">Реестр</div>
+          <h1 class="display text-[52px] leading-none mt-2 tracking-tight">Исходящие</h1>
+          <p class="read mt-2 text-[16px] muted">Все письма, сгенерированные системой и вручную, с автонумерацией</p>
+        </div>
+        <div class="text-right">
+          <div class="micro muted">След. номер</div>
+          <div class="display text-[32px] mono mt-1">02/<span style="font-style: italic;">246</span></div>
+        </div>
+      </div>
+
+      <div class="ruler my-7"></div>
+
+      <div class="frame">
+        <table class="editorial">
+          <thead>
+            <tr>
+              <th>Исх. №</th>
+              <th>Дата</th>
+              <th>Тип</th>
+              <th>Адресат</th>
+              <th>Объект · дело</th>
+              <th>Подписант</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">02/0245</td><td class="mono">26.04.2026</td>
+              <td>T7 · О гарантиях</td>
+              <td>АО РКК · Зиаи Д.А.</td>
+              <td>Металлургов 45/9 · <span class="mono">Д‑2026‑0042</span></td>
+              <td>Щербаченя Д.Н.</td>
+              <td><span class="pill moss">отправлено</span></td>
+            </tr>
+            <tr>
+              <td class="mono">02/0244</td><td class="mono">25.04.2026</td>
+              <td>T3 · Об устранении</td>
+              <td>ООО «АудитПроект» · Пушкин В.А.</td>
+              <td>Московская 44 · <span class="mono">Д‑2026‑0040</span></td>
+              <td>Щербаченя Д.Н.</td>
+              <td><span class="pill moss">отправлено</span></td>
+            </tr>
+            <tr>
+              <td class="mono">02/0243</td><td class="mono">24.04.2026</td>
+              <td>T5 · Ответ в ППК</td>
+              <td>ППК ЕЗ · Толмачев М.М.</td>
+              <td>Строителей 32 · <span class="mono">Д‑2026‑0033</span></td>
+              <td>Щербаченя Д.Н.</td>
+              <td><span class="pill">черновик</span></td>
+            </tr>
+            <tr>
+              <td class="mono">02/0242</td><td class="mono">22.04.2026</td>
+              <td>T8 · Претензия</td>
+              <td>ООО «СпецСнабТранс»</td>
+              <td>Мамина‑Сибиряка 39 · <span class="mono">Д‑2026‑0028</span></td>
+              <td>Шарипов И.Р.</td>
+              <td><span class="pill moss">отправлено</span></td>
+            </tr>
+            <tr>
+              <td class="mono">02/0241</td><td class="mono">22.04.2026</td>
+              <td>T3 · Об устранении</td>
+              <td>МСК‑Гарант</td>
+              <td>Карпинского 72 · <span class="mono">Д‑2026‑0036</span></td>
+              <td>Щербаченя Д.Н.</td>
+              <td><span class="pill moss">отправлено</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== generic placeholder screens ===================== -->
+    <section data-screen="visits" hidden class="px-8 pt-8 pb-16">
+      <div class="micro muted">Календарь</div>
+      <h1 class="display text-[52px] leading-none mt-2">Выезды комиссии</h1>
+      <p class="read mt-3 muted">— раздел заглушка прототипа —</p>
+    </section>
+    <section data-screen="dir-buildings" hidden class="px-8 pt-8 pb-16">
+      <div class="micro muted">Справочник</div>
+      <h1 class="display text-[52px] leading-none mt-2">МКД Мариуполя</h1>
+      <p class="read mt-3 muted">Адреса, привязка к договорам и СПО — заглушка прототипа.</p>
+    </section>
+    <section data-screen="dir-orgs" hidden class="px-8 pt-8 pb-16">
+      <div class="micro muted">Справочник</div>
+      <h1 class="display text-[52px] leading-none mt-2">Контрагенты</h1>
+      <p class="read mt-3 muted">ППК ЕЗ, СПО, администрация, прокуратура — заглушка.</p>
+    </section>
+    <section data-screen="dir-tpl" hidden class="px-8 pt-8 pb-16">
+      <div class="micro muted">Шаблоны</div>
+      <h1 class="display text-[52px] leading-none mt-2">Каталог документов</h1>
+      <p class="read mt-3 muted">11 типов писем и актов из ТЗ. Редактор шаблонов — заглушка.</p>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================ MODAL: GENERATE ============================ -->
+<div id="modal-generate" hidden>
+  <div class="backdrop" onclick="closeModal()"></div>
+  <div class="modal-card">
+    <!-- header -->
+    <header class="px-6 py-5 border-b" style="border-color: var(--line);">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="micro muted">Шаблон <span class="mono ink">T6</span></div>
+          <h2 class="display text-[28px] leading-tight mt-1">Письмо в СПО на основании Акта Н/Д</h2>
+          <div class="micro-2 muted mt-1">Дело <span class="mono">Д‑2026‑0042</span> · АО «Республиканская коммунальная компания» · договор № РР‑166/1122/28</div>
+        </div>
+        <button class="btn ghost" onclick="closeModal()">Esc · закрыть</button>
+      </div>
+    </header>
+
+    <!-- body -->
+    <div class="grid overflow-hidden" style="grid-template-columns: 420px 1fr;">
+
+      <!-- form -->
+      <div class="overflow-y-auto p-6 border-r" style="border-color: var(--line); background: var(--paper-2);">
+
+        <div class="grid gap-4">
+          <div class="field">
+            <label>Адресат</label>
+            <select>
+              <option>Зиаи Д.А. · Зам. ген. директора · АО РКК</option>
+              <option>Пушкин В.А. · Директор · ООО «АудитПроект»</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>В копии</label>
+            <div class="frame p-2 flex flex-wrap gap-2">
+              <span class="pill">Толмачев М.М. · ППК ЕЗ <span class="muted">×</span></span>
+              <span class="pill">Мирошниченко Я.С. · Адм. Мариуполь <span class="muted">×</span></span>
+              <button class="pill ghost">＋ добавить</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Подписант</label>
+            <select>
+              <option>Д.Н. Щербаченя · Руководитель ОП Мариуполь</option>
+              <option>И.Р. Шарипов · Генеральный директор</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="field">
+              <label>Срок устранения</label>
+              <input type="date" value="2026-05-15">
+            </div>
+            <div class="field">
+              <label>Дата след. выезда</label>
+              <input type="date" value="2026-05-16">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Тема письма</label>
+            <input value="Об устранении замечаний пр. Металлургов, 45/9, кв. 63">
+          </div>
+
+          <div class="field">
+            <label>Приложения</label>
+            <div class="frame p-3 grid gap-2">
+              <label class="check"><input type="checkbox" checked> Акт осмотра МКД от 23.10.2025 · 2 л.</label>
+              <label class="check"><input type="checkbox" checked> Акт Н/Д от 19.11.2025 · 2 л.</label>
+              <label class="check"><input type="checkbox" checked> Письмо ППК ЕЗ № ППК‑1‑27290/2025 · 6 л.</label>
+              <label class="check"><input type="checkbox"> Фотофиксация (zip · 1 шт.)</label>
+              <button class="pill ghost mt-1 self-start">＋ ещё приложение</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Пункты договора</label>
+            <div class="frame p-3 grid grid-cols-3 gap-2 text-[13px]">
+              <div><div class="micro-2 muted">Гарантии</div><div class="mono mt-1">7.20 · 7.21</div></div>
+              <div><div class="micro-2 muted">Устранение</div><div class="mono mt-1">8.10</div></div>
+              <div><div class="micro-2 muted">Ответств.</div><div class="mono mt-1">4.1.21</div></div>
+            </div>
+          </div>
+
+          <div class="ruler my-1"></div>
+
+          <div class="field">
+            <label>Заметка к делу (не идёт в письмо)</label>
+            <textarea rows="3" placeholder="напр. «связь по WhatsApp с Зиаи: устно подтвердил, ждём график»"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- preview -->
+      <div class="overflow-y-auto p-8" style="background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);">
+
+        <div class="flex items-center justify-between mb-4">
+          <div class="micro muted">Превью · A4 · подставлено <span class="ink">17 переменных</span></div>
+          <div class="flex items-center gap-2 text-[12px] muted">
+            <span class="pill" style="padding:2px 7px; background:#FFEFCF; border-color:#E2BB7E; color:#6F3D08;">из справочника</span>
+            <span class="pill" style="padding:2px 7px; background:#DCEAFE; border-color:#1F2A6B; color:#1F2A6B;">из карточки</span>
+          </div>
+        </div>
+
+        <div class="letter">
+          <div class="corner-fold"></div>
+
+          <div style="display:flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+            <div>
+              <div style="font-family: 'Fraunces', serif; font-size: 16px; font-weight: 700;">ООО «РКС‑НР»</div>
+              <div style="font-size: 9.5px; color:#555; margin-top: 3px;">
+                ОГРН 1226100012115, ИНН/КПП 6168116983/771401001<br>
+                127106, г. Москва, Алтуфьевское ш., д. 1<br>
+                e‑mail: mail@rks-nr.ru
+              </div>
+            </div>
+            <div style="text-align: right; font-size: 10px; color:#444;">
+              <span class="var">02/0246</span>  · <span class="var">«27» апреля 2026 г.</span><br>
+              На № <span class="var">ППК‑1‑27290/2025</span> от <span class="var">21.10.2025</span>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid #DDD; margin: 14px 0 10px;"></div>
+
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px;">
+            <div>
+              <div><span class="var var-edit">Об устранении замечаний пр. Металлургов, 45/9, кв. 63</span></div>
+            </div>
+            <div style="text-align: right; max-width: 240px;">
+              <div><span class="var">Заместителю генерального директора</span></div>
+              <div><span class="var">АО «Республиканская коммунальная компания»</span></div>
+              <div><span class="var">Д.А. Зиаи</span></div>
+              <div style="font-size: 10px; color:#444; margin-top: 4px;"><span class="var">ptogr@yandex.ru</span></div>
+              <div style="margin-top: 8px;">Копия:</div>
+              <div><span class="var">Первому заместителю руководителя дирекции по развитию территорий</span></div>
+              <div><span class="var">ППК «Единый Заказчик»</span></div>
+              <div><span class="var">М.М. Толмачеву</span></div>
+            </div>
+          </div>
+
+          <p style="margin-top: 18px;"><span class="var">Уважаемый Данис Айратович!</span></p>
+
+          <p style="margin-top: 10px; text-align: justify;">
+            Между ООО «РКС‑НР» и <span class="var">АО «Республиканская коммунальная компания»</span> заключён договор от <span class="var">18.11.2022 № РР‑166/1122/28</span> на выполнение ремонтно‑восстановительных и иных работ.
+          </p>
+
+          <p style="margin-top: 8px; text-align: justify;">
+            В адрес ООО «РКС‑НР» поступило письмо ППК «Единый заказчик» от <span class="var">21.10.2025 исх. № ППК‑1‑27290/2025</span> с требованием прокуратуры г. Мариуполя по обращению <span class="var">Павличенко‑Янатьевой Ю.И.</span> по вопросу недостатков ремонтно‑восстановительных работ многоквартирного жилого дома по адресу: <span class="var">г. Мариуполь, пр. Металлургов, 45/9, кв. 63</span> (далее — Объект).
+          </p>
+
+          <p style="margin-top: 8px; text-align: justify;">
+            На основании составленного <span class="var">Акта о недостатках/дефектах от 19.11.2025</span> требую устранить выявленные недостатки в срок до <span class="var var-edit">15.05.2026</span>. По истечении указанного срока Подрядчик проведёт повторный осмотр. В связи с чем необходимо обеспечить <span class="var var-edit">16.05.2026</span> присутствие Вашего представителя на Объекте, имеющего при себе документ, подтверждающий полномочия.
+          </p>
+
+          <p style="margin-top: 8px; text-align: justify;">
+            Обращаю внимание, что пунктами договора <span class="var">7.20, 7.21</span> установлены гарантийные обязательства Субподрядчика, а пунктом <span class="var">8.10</span> — порядок устранения замечаний. В случае неисполнения настоящего требования ООО «РКС‑НР» вправе применить меры гражданско‑правовой ответственности в соответствии с договором.
+          </p>
+
+          <p style="margin-top: 14px;">
+            Приложения:<br>
+            • <span class="var">Акт осмотра МКД от 23.10.2025</span> на <span class="var">2 л.</span>;<br>
+            • <span class="var">Акт о недостатках/дефектах от 19.11.2025</span> на <span class="var">2 л.</span>;<br>
+            • <span class="var">Письмо ППК ЕЗ № ППК‑1‑27290/2025</span> на <span class="var">6 л.</span>
+          </p>
+
+          <div style="margin-top: 22px;">С уважением,</div>
+          <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+            <span><span class="var">Руководитель ОП в г. Мариуполе</span></span>
+            <span><span class="var">Д.Н. Щербаченя</span></span>
+          </div>
+
+          <div style="margin-top: 28px; font-size: 9.5px; color:#666;">
+            Исп.: <span class="var">М.Ю. Пальков</span> · <span class="var">palkov.my@rks‑nr.ru</span>
+          </div>
+
+          <div class="stamp">№ 02/0246<br>будет присвоен</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- footer -->
+    <footer class="px-6 py-4 border-t flex items-center gap-3" style="border-color: var(--line); background: var(--paper);">
+      <div class="micro muted">17 переменных подставлено · 0 ошибок · готово к подписи</div>
+      <div class="flex-1"></div>
+      <button class="btn ghost" onclick="closeModal()">Сохранить как черновик</button>
+      <button class="btn ghost">↓ Скачать .pdf</button>
+      <button class="btn ghost">↓ Скачать .docx</button>
+      <button class="btn bordeaux">Сохранить в дело · присвоить № 02/0246</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+  // ---------- navigation ----------
+  const screens = document.querySelectorAll('section[data-screen]');
+  const navItems = document.querySelectorAll('.nav-item');
+  const titles = {
+    dashboard: 'Сегодня', cases: 'Дела', case: 'Дела › Д‑2026‑0042',
+    inbox: 'Входящие', outgoing: 'Реестр исходящих', visits: 'Выезды',
+    'dir-buildings': 'Справочники › МКД', 'dir-orgs': 'Справочники › Контрагенты',
+    'dir-tpl': 'Справочники › Шаблоны'
+  };
+
+  function show(name){
+    screens.forEach(s => s.hidden = s.dataset.screen !== name);
+    navItems.forEach(n => n.classList.toggle('active', n.dataset.nav === name || (name === 'case' && n.dataset.nav === 'cases')));
+    document.getElementById('bcrumb').textContent = titles[name] || name;
+    window.scrollTo({top: 0, behavior: 'instant'});
+    // re-trigger rise animation
+    document.querySelectorAll('section[data-screen]:not([hidden]) .rise').forEach(el => {
+      el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
+    });
+  }
+  navItems.forEach(n => n.addEventListener('click', () => show(n.dataset.nav)));
+
+  // ---------- generate dropdown ----------
+  const genBtn  = document.getElementById('genBtn');
+  const genMenu = document.getElementById('genMenu');
+  if (genBtn) {
+    genBtn.addEventListener('click', e => { e.stopPropagation(); genMenu.classList.toggle('hidden'); });
+    document.addEventListener('click', e => {
+      if (!genMenu.contains(e.target)) genMenu.classList.add('hidden');
+    });
+  }
+
+  // ---------- modal ----------
+  function openModal(name){ document.getElementById('modal-' + name).hidden = false; }
+  function closeModal(){ document.querySelectorAll('[id^="modal-"]').forEach(m => m.hidden = true); }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'g' && !e.metaKey && !e.ctrlKey && !document.activeElement.matches('input,textarea,select')) {
+      const open = document.querySelector('section[data-screen]:not([hidden])');
+      if (open && open.dataset.screen === 'case') openModal('generate');
+    }
+  });
+
+  // ---------- cases table generated ----------
+  const casesData = [
+    ['Д‑2026‑0042','пр. Металлургов, 45/9, кв. 63','Павличенко‑Янатьева Ю.И.','АО РКК','Ожидание устранения','bordeaux','ППК‑1‑27290/2025','20.12.2025 · −3д','bordeaux','М.Ю. Пальков'],
+    ['Д‑2026‑0040','ул. Московская, 44, кв. 19','—','ООО «АудитПроект»','Запрос в СПО','amber','ППК‑1‑32475/2025','28.04.2026 · завтра','amber','М.Ю. Пальков'],
+    ['Д‑2026‑0038','ул. Сеченова, 84','жители 2 п.','МСК‑Гарант','Повторный выезд','amber','ППК‑1‑29012/2025','29.04.2026','amber','А.С. Горчаков'],
+    ['Д‑2026‑0036','ул. Карпинского, 72','—','МСК‑Гарант','Акт Н/Д составлен','','ППК‑1‑28455/2025','30.04.2026','','А.С. Горчаков'],
+    ['Д‑2026‑0035','ул. Карпинского, 74','—','МСК‑Гарант','Письмо «О гарантиях»','bordeaux','ППК‑1‑27001/2025','02.05.2026','amber','М.Ю. Пальков'],
+    ['Д‑2026‑0033','ул. Строителей, 32','—','ООО «СпецСнабТранс»','Готов ответ в ППК','moss','ППК‑1‑31651/2025','—','','М.Ю. Пальков'],
+    ['Д‑2026‑0029','пер. Аносова, 13, кв. 12','Аносов А.С.','ООО «АудитПроект»','Устранение зафиксировано','moss','ППК‑1‑22945/2025','—','','М.Ю. Пальков'],
+    ['Д‑2026‑0024','ул. Карпинского, 64','—','МСК‑Гарант','Готов ответ в ППК','moss','ППК‑1‑20100/2025','—','','М.Ю. Пальков'],
+    ['Д‑2026‑0021','ул. Азовстальская, 91','—','МСК‑Гарант','Запрос в СПО','amber','ППК‑1‑18229/2025','05.05.2026','','А.С. Горчаков'],
+    ['Д‑2026‑0017','ул. Сеченова, 59','—','МСК‑Гарант','Письмо T6 отправлено','','ППК‑1‑17440/2025','10.05.2026','','А.С. Горчаков'],
+  ];
+  const casesBody = document.getElementById('casesBody');
+  if (casesBody) {
+    casesBody.innerHTML = casesData.map(r => `
+      <tr onclick="show('case')">
+        <td class="mono">${r[0]}</td>
+        <td>${r[1]}<div class="micro-2 muted mt-1">${r[2]}</div></td>
+        <td>${r[3]}</td>
+        <td><span class="pill ${r[5]}">${r[4]}</span></td>
+        <td class="mono">${r[6]}</td>
+        <td class="mono ${r[8]}">${r[7]}</td>
+        <td>${r[9]}</td>
+      </tr>
+    `).join('');
+  }
+</script>
+</body>
+</html>

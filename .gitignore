@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+.next/
+.next-build/
+out/
+*.tsbuildinfo
+
+# database
+prisma/*.db
+prisma/*.db-journal
+prisma/migrations/
+
+# generated outputs
+storage/
+templates/*.docx
+
+# env
+.env
+.env.local
+.env.*.local
+
+# editor
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+# docker / coolify
+data/
+
+# временные тесты и созданные локально artefakts
+_*.mjs
+_*.ts
+_*.docx
+"Инструкция РКС-Выезд.docx"
+test_letter.docx
+
+# Word lock files
+~$*.docx

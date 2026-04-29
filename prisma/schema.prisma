@@ -1,0 +1,379 @@
+// РКС·Выезд — схема БД
+// Реестр обращений жителей МКД, генерация исходящих писем, претензионная работа.
+// SQLite для прототипа; для prod — поменять provider и DATABASE_URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================
+//  Справочники
+// =============================================================
+//
+// OrgKind (string enum): customer | subcontractor | administration |
+//   prosecutor | fund | balance_holder | ours | other
+//
+model Organization {
+  id            String   @id @default(cuid())
+  kind          String   // OrgKind
+  shortName     String
+  fullName      String
+  inn           String?
+  kpp           String?
+  ogrn          String?
+  legalAddress  String?
+  defaultEmail  String?
+  extraEmails   String?  // JSON: string[]
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  contacts      Contact[]
+  contracts     Contract[]                @relation("subcontractorContracts")
+  buildingsAsSpo Building[]               @relation("buildingSubcontractor")
+  incomingFrom  IncomingLetter[]
+  casesAsSubco  Case[]                    @relation("caseSubcontractor")
+}
+
+model Contact {
+  id              String   @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  lastName        String
+  firstName       String
+  middleName      String?
+  position        String?      // именительный — «Заместитель ген. директора»
+  dativePosition  String?      // дательный — «Заместителю ген. директора»
+  dativeName      String?      // «Д.А. Зиаи»
+  vocativeName    String?      // «Уважаемый Данис Айратович!»
+  shortName       String?      // «Д.А. Зиаи»
+  email           String?
+  isOurSignatory  Boolean  @default(false)
+  isOurExecutor   Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Contract {
+  id              String   @id @default(cuid())
+  number          String
+  date            DateTime
+  subcontractorId String
+  subcontractor   Organization @relation("subcontractorContracts", fields: [subcontractorId], references: [id])
+
+  // JSON: { warranty: string[], remedy: string[], info_request: string[], responsibility: string[] }
+  clauses         String?
+  penaltyAmount   Int?     // в копейках; 150 000 ₽ = 15_000_000 копеек
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  buildings       Building[]
+  cases           Case[]
+}
+
+model Building {
+  id               String   @id @default(cuid())
+  city             String   @default("Мариуполь")
+  street           String
+  house            String
+  apartment        String?
+  porch            String?  // подъезд
+  shortAddress     String   // «пр. Металлургов 45/9, кв. 63»
+  fullAddress      String   // «г. Мариуполь, пр. Металлургов, д. 45/9, кв. 63»
+
+  subcontractorId  String?
+  subcontractor    Organization? @relation("buildingSubcontractor", fields: [subcontractorId], references: [id])
+  contractId       String?
+  contract         Contract?     @relation(fields: [contractId], references: [id])
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  cases            Case[]
+  incomingLetters  IncomingLetter[]
+}
+
+// =============================================================
+//  Входящие письма
+// =============================================================
+
+model IncomingLetter {
+  id                    String   @id @default(cuid())
+  fromOrganizationId    String
+  fromOrganization      Organization @relation(fields: [fromOrganizationId], references: [id])
+  number                String   // напр. ППК-1-32475/2025
+  incomingDate          DateTime
+  subject               String?
+
+  applicantName         String?  // «Зуева Н.Н.»
+  applicantOrigin       String?  // «Мариупольский филиал Единого регионального фонда…»
+  applicantLetterNumber String?
+  applicantLetterDate   DateTime?
+
+  attachedFile          String?  // путь к загруженному PDF
+  pageCount             Int?
+
+  buildingId            String?
+  building              Building? @relation(fields: [buildingId], references: [id])
+
+  linkedCaseId          String?  @unique
+  linkedCase            Case?    @relation(fields: [linkedCaseId], references: [id])
+
+  createdAt             DateTime @default(now())
+}
+
+// =============================================================
+//  Дело — центральная сущность
+// =============================================================
+
+model Case {
+  id                String   @id @default(cuid())
+  caseNumber        String   @unique         // «Д-2026-0042»
+  state             String                   // CaseState (см. lib/workflow.ts)
+  buildingId        String
+  building          Building @relation(fields: [buildingId], references: [id])
+  subcontractorId   String
+  subcontractor     Organization @relation("caseSubcontractor", fields: [subcontractorId], references: [id])
+  contractId        String?
+  contract          Contract? @relation(fields: [contractId], references: [id])
+  responsibleUserId String?
+  responsibleUser   User?    @relation(fields: [responsibleUserId], references: [id])
+
+  // JSON: { spo_response: ISO, next_visit: ISO, warranty_remedy: ISO, … }
+  deadlines         String?
+
+  outcome           String?     // resolved | withdrawn_volumes | litigation | null
+  closedAt          DateTime?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  incomingLetter    IncomingLetter?
+  visits            Visit[]
+  documents         Document[]
+  events            CaseEvent[]
+}
+
+model CaseEvent {
+  id          String   @id @default(cuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  occurredAt  DateTime
+  kind        String   // incoming | letter_sent | visit | spo_response | state_changed | deadline_set
+  title       String
+  description String?
+  // JSON-нагрузка: ссылки на документ/выезд/новое состояние и т.п.
+  payload     String?
+  createdAt   DateTime @default(now())
+}
+
+model Visit {
+  id              String   @id @default(cuid())
+  caseId          String
+  case            Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  visitDate       DateTime
+  kind            String   // initial | repeat | final
+  status          String   @default("planned") // planned | done | cancelled
+  // JSON: [{ contactId | name, role: 'rks' | 'spo' | 'admin' | 'gbu' }, …]
+  commissionMembers String?
+  findings        String?
+  result          String?  // defects_found | resolved | partially_resolved (только если status=done)
+  inspectionActId String?  @unique          // FK → Document.id (Акт осмотра)
+  inspectionAct   Document? @relation("visitToAct", fields: [inspectionActId], references: [id])
+
+  // JSON: [{ path, mime, size, takenAt, lat?, lon? }]
+  photos          String?
+
+  // Когда визит был зафиксирован (заполняется при переходе planned → done)
+  recordedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// =============================================================
+//  Документы
+// =============================================================
+
+model Document {
+  id              String   @id @default(cuid())
+  caseId          String
+  case            Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  templateKind    String   // T1, T3, T5, T6, T7, T8 (см. lib/workflow.ts)
+  outgoingNumber  String?  @unique
+  outgoingDate    DateTime?
+  subject         String?
+
+  // JSON: значения переменных шаблона на момент генерации
+  payload         String?
+
+  // JSON: [{ contactId, role: 'main'|'copy' }]
+  addressees      String?
+  signatoryId     String?
+  executorIds     String?  // JSON: string[]
+
+  // JSON: [{ title, pages }]
+  attachments     String?
+
+  status          String   @default("draft")  // draft | rendered | signed | sent | acknowledged
+
+  renderedDocxPath String?
+  renderedPdfPath  String?
+
+  // УКЭП
+  signaturePath        String?    // .sig / CMS-файл подписи
+  signatureFingerprint String?    // отпечаток сертификата (sha1 hex)
+  signerName           String?
+  signedAt             DateTime?
+
+  // ЭДО (СБИС/Диадок)
+  edoStatus      String?   // queued | sent | delivered | rejected | signed
+  edoTrackId     String?   // идентификатор пакета у провайдера
+  edoProvider    String?   // local | sbis | diadoc
+  edoPackagePath String?   // путь к ZIP-пакету
+  edoSentAt      DateTime?
+  edoDeliveredAt DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  visit           Visit?  @relation("visitToAct")
+}
+
+// =============================================================
+//  Системное
+// =============================================================
+
+model OutgoingNumberCounter {
+  id      Int    @id @default(autoincrement())
+  prefix  String @unique  // «02»
+  year    Int
+  current Int    @default(0)
+}
+
+model DocumentTemplate {
+  id              String   @id @default(cuid())
+  kind            String   @unique  // T1_ao_mkd, T3_letter_to_spo_remedy, …
+  title           String
+  subtitle        String?
+  // JSON: { availableIn: string[], transitionsTo: string[] }
+  workflow        String?
+  source          String   @default("code")  // code | uploaded | builder
+  // JSON для builder: блоки шаблона
+  body            String?
+  // путь к .docx, если source=uploaded или сгенерирован builder'ом
+  docxPath        String?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model User {
+  id            String  @id @default(cuid())
+  email         String  @unique
+  emailVerified DateTime?
+  fullName      String
+  name          String?  // alias для Auth.js
+  image         String?
+  position      String?
+  shortName     String?
+  isHead        Boolean @default(false)
+  isAdmin       Boolean @default(false)
+
+  cases         Case[]
+  accounts      Account[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  pushSubs      PushSubscription[]
+  aiThreads     AiThread[]
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  action      String   // case.create, doc.generate, doc.send, doc.sign, edo.send, …
+  entityType  String?
+  entityId    String?
+  payload     String?  // JSON-нагрузка
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
+model AiThread {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseId    String?
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  AiMessage[]
+}
+
+model AiMessage {
+  id         String   @id @default(cuid())
+  threadId   String
+  thread     AiThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role       String   // user | assistant | system
+  content    String
+  createdAt  DateTime @default(now())
+}

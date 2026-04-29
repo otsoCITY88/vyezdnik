@@ -1,0 +1,41 @@
+# node / next
+node_modules
+.next
+.next-build
+out
+
+# git
+.git
+.gitignore
+.gitattributes
+
+# env
+.env
+.env.local
+.env.*.local
+
+# editor / OS
+.DS_Store
+.idea
+.vscode
+*.log
+
+# data — НЕ копируем локальные БД и сторадж в образ
+prisma/*.db
+prisma/*.db-journal
+prisma/migrations
+storage/
+
+# docs (для образа не нужны)
+*.md
+!README.md
+prototype.html
+TZ.md
+INSTRUCTIONS.md
+DEPLOY.md
+"Инструкция*.docx"
+
+# temporary
+*_e2e_*.mjs
+_*.mjs
+_*.ts
