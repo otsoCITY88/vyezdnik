@@ -89,6 +89,9 @@ body {
 .nav-item.active { color: var(--ink); background: var(--paper-2); border-left-color: var(--ink); }
 .nav-item .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--muted); flex: none; }
 .nav-item.active .dot { background: var(--bordeaux); }
+.nav-item svg { color: var(--muted); flex: none; transition: color 0.15s ease; }
+.nav-item:hover svg { color: var(--ink-2); }
+.nav-item.active svg { color: var(--bordeaux); }
 
 /* ----- timeline ----- */
 .tl { position: relative; padding-left: 30px; }

@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard, Folder, Inbox, Send, Calendar, BarChart3,
+  Building2, Users, FileText, UserCog, FilePlus,
+  type LucideIcon,
+} from "lucide-react";
 import { signOutAction } from "@/lib/auth-actions";
 
 export type SidebarUser = {
@@ -17,15 +22,24 @@ export type SidebarCounters = {
   burningCases: number;    // дел с горящим дедлайном (≤3 дня)
 };
 
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: string;
+  badgeKind?: "amber" | "bordeaux" | "ghost";
+};
+
 export function Sidebar({ user, counters }: { user: SidebarUser; counters: SidebarCounters }) {
-  const groups: Array<{ title: string; items: Array<{ href: string; label: string; badge?: string; badgeKind?: "amber" | "bordeaux" | "ghost" }> }> = [
+  const groups: Array<{ title: string; items: NavItem[] }> = [
     {
       title: "Работа",
       items: [
-        { href: "/", label: "Сегодня" },
+        { href: "/", label: "Сегодня", icon: LayoutDashboard },
         {
           href: "/cases",
           label: "Дела",
+          icon: Folder,
           ...(counters.burningCases > 0
             ? { badge: String(counters.burningCases), badgeKind: "bordeaux" as const }
             : {}),
@@ -33,23 +47,24 @@ export function Sidebar({ user, counters }: { user: SidebarUser; counters: Sideb
         {
           href: "/inbox",
           label: "Входящие",
+          icon: Inbox,
           ...(counters.inboxUnlinked > 0
             ? { badge: String(counters.inboxUnlinked), badgeKind: "amber" as const }
             : {}),
         },
-        { href: "/outgoing", label: "Реестр исх." },
-        { href: "/calendar", label: "Календарь" },
-        { href: "/analytics", label: "Аналитика" },
+        { href: "/outgoing", label: "Реестр исх.", icon: Send },
+        { href: "/calendar", label: "Календарь", icon: Calendar },
+        { href: "/analytics", label: "Аналитика", icon: BarChart3 },
       ],
     },
     {
       title: "Справочники",
       items: [
-        { href: "/buildings", label: "МКД" },
-        { href: "/organizations", label: "Контрагенты" },
-        { href: "/contracts", label: "Договоры" },
-        { href: "/users", label: "Пользователи" },
-        { href: "/templates", label: "Шаблоны" },
+        { href: "/buildings", label: "МКД", icon: Building2 },
+        { href: "/organizations", label: "Контрагенты", icon: Users },
+        { href: "/contracts", label: "Договоры", icon: FileText },
+        { href: "/users", label: "Пользователи", icon: UserCog },
+        { href: "/templates", label: "Шаблоны", icon: FilePlus },
       ],
     },
   ];
@@ -84,7 +99,7 @@ export function Sidebar({ user, counters }: { user: SidebarUser; counters: Sideb
                 href={it.href}
                 className={`nav-item ${isActive(it.href) ? "active" : ""}`}
               >
-                <span className="dot" />
+                <it.icon size={16} strokeWidth={1.75} />
                 <span className="flex-1">{it.label}</span>
                 {it.badge && (
                   <span className={`pill ${it.badgeKind || ""}`} style={{ padding: "1px 7px", fontSize: 10 }}>
