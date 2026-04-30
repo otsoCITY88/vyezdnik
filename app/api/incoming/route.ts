@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
   const applicantOrigin = String(form.get("applicantOrigin") || "");
   const applicantLetterNumber = String(form.get("applicantLetterNumber") || "");
   const applicantLetterDate = String(form.get("applicantLetterDate") || "");
+  const requestedRemedyDate = String(form.get("requestedRemedyDate") || "");
   const buildingId = String(form.get("buildingId") || "");
   const pageCount = Number(form.get("pageCount") || 0);
 
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
       applicantOrigin: applicantOrigin || null,
       applicantLetterNumber: applicantLetterNumber || null,
       applicantLetterDate: applicantLetterDate ? new Date(applicantLetterDate) : null,
+      requestedRemedyDate: requestedRemedyDate ? new Date(requestedRemedyDate) : null,
       buildingId: buildingId || null,
       attachedFile,
       pageCount: pageCount || null,

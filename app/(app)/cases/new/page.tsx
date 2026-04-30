@@ -30,6 +30,10 @@ export default async function NewCasePage(
         from: i.fromOrganization.shortName,
         applicantName: i.applicantName || "",
         buildingId: i.buildingId || undefined,
+        // Срок устранения из самого письма — wizard подставит как дедлайн "remedy".
+        requestedRemedyDate: i.requestedRemedyDate
+          ? i.requestedRemedyDate.toISOString().slice(0, 10)
+          : undefined,
       }))}
       buildings={buildings.map((b) => ({
         id: b.id,

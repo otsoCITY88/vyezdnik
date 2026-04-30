@@ -8,6 +8,9 @@ const Body = z.object({
   buildingId: z.string(),
   subcontractorId: z.string(),
   responsibleUserId: z.string().optional(),
+  // Опциональные дедлайны при создании дела (например, remedy из входящего).
+  // Сохраняются как JSON в Case.deadlines.
+  deadlines: z.record(z.string(), z.string()).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -25,6 +28,13 @@ export async function POST(req: NextRequest) {
 
   const caseNumber = await nextCaseNumber();
 
+  // Дедлайны: то что передал клиент + автоподстановка remedy из письма (если
+  // клиент не передал явно).
+  const deadlines: Record<string, string> = { ...(data.deadlines || {}) };
+  if (!deadlines.remedy && incoming.requestedRemedyDate) {
+    deadlines.remedy = incoming.requestedRemedyDate.toISOString().slice(0, 10);
+  }
+
   const created = await prisma.case.create({
     data: {
       caseNumber,
@@ -33,6 +43,7 @@ export async function POST(req: NextRequest) {
       subcontractorId: data.subcontractorId,
       contractId: building.contractId,
       responsibleUserId: data.responsibleUserId,
+      deadlines: Object.keys(deadlines).length ? JSON.stringify(deadlines) : null,
     },
   });
 

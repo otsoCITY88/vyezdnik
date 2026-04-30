@@ -4,7 +4,12 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-interface IncomingOpt { id: string; number: string; date: string; subject: string; from: string; applicantName: string; buildingId?: string }
+interface IncomingOpt {
+  id: string; number: string; date: string; subject: string; from: string;
+  applicantName: string; buildingId?: string;
+  /** Срок устранения, прописанный в письме (если есть) — пойдёт в дедлайн `remedy`. */
+  requestedRemedyDate?: string;
+}
 interface BuildingOpt { id: string; label: string; subcontractorId?: string }
 interface Opt { id: string; label: string }
 
@@ -48,10 +53,19 @@ export function NewCaseWizard({
   async function submit() {
     setBusy(true); setErr(null);
     try {
+      // Если в выбранном входящем стоит requestedRemedyDate — передаём его
+      // как дефолтный дедлайн `remedy`, чтобы не заполнять руками.
+      const deadlines = incoming?.requestedRemedyDate
+        ? { remedy: incoming.requestedRemedyDate }
+        : undefined;
       const r = await fetch("/api/cases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ incomingId, buildingId, subcontractorId, responsibleUserId: responsibleId }),
+        body: JSON.stringify({
+          incomingId, buildingId, subcontractorId,
+          responsibleUserId: responsibleId,
+          deadlines,
+        }),
       });
       if (!r.ok) throw new Error(`Ошибка ${r.status}`);
       const json = await r.json();

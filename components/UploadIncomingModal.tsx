@@ -39,6 +39,7 @@ export function UploadIncomingModal({
     applicantOrigin: "",
     applicantLetterNumber: "",
     applicantLetterDate: "",
+    requestedRemedyDate: "",
     buildingId: "",
     pageCount: 0,
   });
@@ -209,6 +210,19 @@ export function UploadIncomingModal({
           <div className="field">
             <label>Дата исходного обращения</label>
             <input type="date" value={f.applicantLetterDate} onChange={(e) => set("applicantLetterDate", e.target.value)} />
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Срок устранения по письму</label>
+          <input
+            type="date"
+            value={f.requestedRemedyDate}
+            onChange={(e) => set("requestedRemedyDate", e.target.value)}
+          />
+          <div className="micro-2 text-muted mt-1">
+            Если в письме прописан срок — укажите. При создании дела из этого письма
+            автоматически подставится в дедлайн «Устранение».
           </div>
         </div>
 
