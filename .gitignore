@@ -8,6 +8,8 @@ out/
 # database
 prisma/*.db
 prisma/*.db-journal
+prisma/**/*.db
+prisma/**/*.db-journal
 prisma/migrations/
 
 # generated outputs
