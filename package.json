@@ -26,6 +26,7 @@
     "docx": "^9.0.3",
     "docxtemplater": "^3.55.4",
     "imapflow": "^1.0.171",
+    "lucide-react": "^1.14.0",
     "mailparser": "^3.7.2",
     "next": "15.0.4",
     "next-auth": "^5.0.0-beta.25",
