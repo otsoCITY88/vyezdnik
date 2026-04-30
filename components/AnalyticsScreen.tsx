@@ -13,7 +13,40 @@ export interface Props {
 
 const COLORS = ["#14181F", "#6B1F2A", "#B26314", "#1F2A6B", "#4E5C39", "#7E776A"];
 
+function EmptyChart({ label = "Данных пока нет" }: { label?: string }) {
+  return (
+    <div
+      className="grid place-items-center text-muted text-[13px]"
+      style={{ height: "100%", minHeight: 180 }}
+    >
+      {label}
+    </div>
+  );
+}
+
 export function AnalyticsScreen({ spoSla, byMonth, topBuildings, workload, templates }: Props) {
+  const hasAnyData =
+    spoSla.length + byMonth.length + topBuildings.length + workload.length + templates.length > 0;
+
+  if (!hasAnyData) {
+    return (
+      <section className="px-8 pt-8 pb-16">
+        <div>
+          <div className="micro text-muted">Сводка</div>
+          <h1 className="display text-[52px] leading-none mt-2 tracking-tight">Аналитика</h1>
+          <p className="read mt-2 text-[16px] text-muted">SLA по СПО, нагрузка, динамика, проблемные адреса</p>
+        </div>
+        <div className="ruler my-7" />
+        <div className="frame p-10 text-center text-muted">
+          <div className="display text-[20px]">Данных для аналитики пока нет</div>
+          <div className="text-[13px] mt-2">
+            Заведите хотя бы одно дело и сгенерируйте документы — графики появятся автоматически.
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="px-8 pt-8 pb-16">
       <div>
@@ -31,17 +64,19 @@ export function AnalyticsScreen({ spoSla, byMonth, topBuildings, workload, templ
           <div className="micro text-muted">SLA по субподрядчикам</div>
           <h3 className="display text-[20px] mt-1 mb-3">Среднее время закрытия (дни)</h3>
           <div style={{ width: "100%", height: 280 }}>
-            <ResponsiveContainer>
-              <BarChart data={spoSla} margin={{ left: 0, right: 10, top: 10, bottom: 30 }}>
-                <CartesianGrid stroke="var(--line-soft)" vertical={false} />
-                <XAxis dataKey="spoShort" tick={{ fontSize: 11 }} angle={-15} textAnchor="end" height={50} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="avgDaysToClose" name="дней до закрытия">
-                  {spoSla.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {spoSla.length === 0 ? <EmptyChart /> : (
+              <ResponsiveContainer>
+                <BarChart data={spoSla} margin={{ left: 0, right: 10, top: 10, bottom: 30 }}>
+                  <CartesianGrid stroke="var(--line-soft)" vertical={false} />
+                  <XAxis dataKey="spoShort" tick={{ fontSize: 11 }} angle={-15} textAnchor="end" height={50} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="avgDaysToClose" name="дней до закрытия">
+                    {spoSla.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
           <table className="editorial mt-4 text-[12.5px]">
             <thead>
@@ -66,15 +101,17 @@ export function AnalyticsScreen({ spoSla, byMonth, topBuildings, workload, templ
           <div className="micro text-muted">Динамика</div>
           <h3 className="display text-[20px] mt-1 mb-3">Заведено дел по месяцам</h3>
           <div style={{ width: "100%", height: 320 }}>
-            <ResponsiveContainer>
-              <LineChart data={byMonth} margin={{ left: 0, right: 20, top: 10, bottom: 10 }}>
-                <CartesianGrid stroke="var(--line-soft)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Line dataKey="count" stroke="#6B1F2A" strokeWidth={2} dot={{ r: 4, fill: "#6B1F2A" }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {byMonth.length === 0 ? <EmptyChart /> : (
+              <ResponsiveContainer>
+                <LineChart data={byMonth} margin={{ left: 0, right: 20, top: 10, bottom: 10 }}>
+                  <CartesianGrid stroke="var(--line-soft)" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Line dataKey="count" stroke="#6B1F2A" strokeWidth={2} dot={{ r: 4, fill: "#6B1F2A" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -101,16 +138,18 @@ export function AnalyticsScreen({ spoSla, byMonth, topBuildings, workload, templ
           <div className="micro text-muted">Команда</div>
           <h3 className="display text-[20px] mt-1 mb-3">Нагрузка по специалистам</h3>
           <div style={{ width: "100%", height: 220 }}>
-            <ResponsiveContainer>
-              <BarChart data={workload} layout="vertical" margin={{ left: 80, right: 20 }}>
-                <CartesianGrid stroke="var(--line-soft)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} />
-                <Tooltip />
-                <Bar dataKey="open" name="открыто" fill="#B26314" />
-                <Bar dataKey="total" name="всего" fill="#7E776A" />
-              </BarChart>
-            </ResponsiveContainer>
+            {workload.length === 0 ? <EmptyChart /> : (
+              <ResponsiveContainer>
+                <BarChart data={workload} layout="vertical" margin={{ left: 80, right: 20 }}>
+                  <CartesianGrid stroke="var(--line-soft)" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} />
+                  <Tooltip />
+                  <Bar dataKey="open" name="открыто" fill="#B26314" />
+                  <Bar dataKey="total" name="всего" fill="#7E776A" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -119,15 +158,17 @@ export function AnalyticsScreen({ spoSla, byMonth, topBuildings, workload, templ
           <div className="micro text-muted">Шаблоны</div>
           <h3 className="display text-[20px] mt-1 mb-3">Сгенерировано документов по типам</h3>
           <div style={{ width: "100%", height: 220 }}>
-            <ResponsiveContainer>
-              <BarChart data={templates}>
-                <CartesianGrid stroke="var(--line-soft)" vertical={false} />
-                <XAxis dataKey="kind" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#1F2A6B" />
-              </BarChart>
-            </ResponsiveContainer>
+            {templates.length === 0 ? <EmptyChart /> : (
+              <ResponsiveContainer>
+                <BarChart data={templates}>
+                  <CartesianGrid stroke="var(--line-soft)" vertical={false} />
+                  <XAxis dataKey="kind" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#1F2A6B" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

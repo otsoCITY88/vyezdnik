@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -10,6 +10,7 @@ import ruLocale from "@fullcalendar/core/locales/ru";
 
 export function CalendarScreen() {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <section className="px-8 pt-8 pb-16">
@@ -25,6 +26,13 @@ export function CalendarScreen() {
       </div>
 
       <div className="ruler my-6" />
+
+      {error && (
+        <div className="frame p-3 mb-4 text-bordeaux text-[13px]" style={{ background: "var(--bordeaux-bg)" }}>
+          {error}
+          <button className="btn ghost sm ml-3" onClick={() => setError(null)}>×</button>
+        </div>
+      )}
 
       <div className="frame p-4 calendar-host">
         <FullCalendar
@@ -52,9 +60,10 @@ export function CalendarScreen() {
                 body: JSON.stringify({ visitDate: info.event.start?.toISOString() }),
               });
               if (!r.ok) throw new Error();
+              setError(null);
             } catch {
               info.revert();
-              alert("Не удалось перенести");
+              setError("Не удалось перенести выезд. Попробуйте ещё раз.");
             }
           }}
         />

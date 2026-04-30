@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "./Modal";
 import { Pill } from "./Pill";
+import { templateSourceLabel } from "@/lib/labels";
 
 export interface TemplateView {
   kind: string;
@@ -61,7 +62,9 @@ export function TemplatesScreen({ templates }: { templates: TemplateView[] }) {
             <div className="flex items-baseline justify-between">
               <div className="mono text-[12px] text-muted">{t.kind.split("_")[0]}</div>
               <div className="flex items-center gap-2">
-                <Pill tone={t.source === "code" ? "neutral" : t.source === "builder" ? "moss" : "indigo"}>{t.source}</Pill>
+                <Pill tone={t.source === "code" ? "neutral" : t.source === "builder" ? "moss" : "indigo"}>
+                  {templateSourceLabel(t.source)}
+                </Pill>
                 {!t.active && <Pill tone="bordeaux">отключён</Pill>}
                 <button className="btn ghost sm" onClick={() => setEdit(t)}>✎ Редактировать</button>
               </div>
@@ -95,13 +98,21 @@ function TemplateEditor({ template, onClose }: { template: TemplateView; onClose
   const [body, setBody] = useState<{ title: string; blocks: Block[] }>({ title: template.title, blocks: [] });
   const [tab, setTab] = useState<"builder" | "upload" | "info">("builder");
 
-  // подгружаем body
-  if (!loaded) {
-    fetch(`/api/templates/${template.kind}`).then((r) => r.json()).then((j) => {
-      if (j.body) setBody(j.body);
-      setLoaded(true);
-    });
-  }
+  // Подгружаем body шаблона из API один раз. Раньше fetch вызывался прямо в теле
+  // рендера — это нарушает правила React и может приводить к гонкам/повторным
+  // запросам.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/templates/${template.kind}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled) return;
+        if (j?.body) setBody(j.body);
+        setLoaded(true);
+      })
+      .catch(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
+  }, [template.kind]);
 
   function setBlock(i: number, patch: Partial<Block>) {
     setBody((b) => ({ ...b, blocks: b.blocks.map((bl, j) => j === i ? { ...bl, ...patch } as Block : bl) }));

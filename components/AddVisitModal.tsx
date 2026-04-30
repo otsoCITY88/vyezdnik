@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "./Modal";
 
@@ -39,13 +39,34 @@ export function AddVisitModal({
     kind: (fromPlanned?.kind || "repeat") as "initial" | "repeat" | "final",
     result: "defects_found",
     findings: fromPlanned?.notes ? `Заметка перед выездом: ${fromPlanned.notes}\n\n` : "",
-    members: fromPlanned?.members?.length ? fromPlanned.members : [
-      { role: "rks", name: "М.Ю. Пальков" },
-      { role: "rks", name: "А.С. Горчаков" },
-    ] as Array<{ role: string; name: string }>,
+    // Если фиксируем запланированный визит — берём его состав, иначе пусто:
+    // подтянем из реальных пользователей в useEffect ниже.
+    members: (fromPlanned?.members?.length ? fromPlanned.members : []) as Array<{ role: string; name: string }>,
   });
   const [newMember, setNewMember] = useState({ role: "spo", name: "" });
   const [photos, setPhotos] = useState<File[]>([]);
+
+  // Если состав комиссии пуст (новый visit, не из plan) — подтягиваем
+  // сотрудников РКС-НР и подставляем как удобный дефолт.
+  useEffect(() => {
+    if (fromPlanned || f.members.length > 0) return;
+    let cancelled = false;
+    fetch("/api/users")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((users: Array<{ shortName?: string | null; fullName: string }>) => {
+        if (cancelled || !Array.isArray(users) || users.length === 0) return;
+        setF((s) => (s.members.length > 0 ? s : {
+          ...s,
+          members: users.slice(0, 2).map((u) => ({
+            role: "rks",
+            name: u.shortName || u.fullName,
+          })),
+        }));
+      })
+      .catch(() => { /* пусто — пользователь сам наберёт состав */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function set<K extends keyof typeof f>(k: K, v: (typeof f)[K]) {
     setF((s) => ({ ...s, [k]: v }));

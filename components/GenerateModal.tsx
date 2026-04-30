@@ -129,11 +129,11 @@ export function GenerateModal({
           body: JSON.stringify(body),
         });
         if (!r.ok) throw new Error(`Server error ${r.status}`);
-        const json = await r.json();
+        await r.json();
+        // Документ виден в карточке дела сразу после refresh — отдельное
+        // нативное alert-окно выглядело дёшево и блокировало интерфейс.
         router.refresh();
         onClose();
-        // мини-уведомление через alert, чтобы прототип оставался простым
-        setTimeout(() => alert(`Сохранено в дело: исх. ${json.outgoingNumber}`), 50);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Ошибка");
@@ -300,7 +300,7 @@ export function GenerateModal({
                 Превью отображает структуру письма; точная вёрстка — в .docx после генерации.
               </div>
               <p>
-                <b>{labelByKind(tpl.kind)}</b> · {previewNumber || "02/0246"} от {dateShort(new Date())}
+                <b>{labelByKind(tpl.kind)}</b> · {previewNumber || "№ будет присвоен"} от {dateShort(new Date())}
               </p>
               <p style={{ marginTop: 8 }}>
                 Адресат: <span className="var">{adresseePool.find((c) => c.id === addressee)?.label || "—"}</span>
@@ -331,7 +331,7 @@ export function GenerateModal({
                   {attachments.map((a, i) => <li key={i}><span className="var">{a.title}</span> на <span className="var">{a.pages}</span> л.;</li>)}
                 </ul>
               )}
-              <div className="stamp">№ {previewNumber || "02/0246"}<br/>будет присвоен</div>
+              <div className="stamp">№ {previewNumber || "—"}<br/>будет присвоен</div>
             </div>
           </div>
         </div>

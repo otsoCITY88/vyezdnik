@@ -74,6 +74,11 @@ export interface RenderInput {
   requestLetterNumber?: string;
   requestLetterDate?: Date;
   requestDeadline?: Date;
+  // состав комиссии и список дефектов — заполняется из карточки выезда (АО МКД, Акт Н/Д).
+  // Если не передано — подтягиваются автоматически из последнего визита и адресата.
+  commissionRks?: Array<{ position: string; name: string }>;
+  commissionSpo?: Array<{ position: string; name: string }>;
+  defects?: Array<{ n: number; description: string; deadline?: string }>;
 }
 
 export interface RenderResult {
@@ -166,6 +171,62 @@ async function buildPayload(input: RenderInput): Promise<Record<string, unknown>
     ? await prisma.contact.findMany({ where: { id: { in: input.executorIds } } })
     : [];
   const executor = executors[0];
+
+  // Состав комиссии РКС: 1) явный input, 2) контакты нашей орг. с isOurExecutor,
+  // 3) если ничего нет — подпись только подписанта.
+  const commissionRks = input.commissionRks?.length
+    ? input.commissionRks
+    : (await prisma.contact.findMany({
+        where: {
+          organization: { kind: "ours" },
+          OR: [{ isOurExecutor: true }, { isOurSignatory: true }],
+        },
+        orderBy: [{ isOurSignatory: "desc" }, { lastName: "asc" }],
+        take: 4,
+      })).map((c) => ({
+        position: c.position || "—",
+        name: c.shortName || `${c.lastName} ${c.firstName[0]}.${c.middleName ? c.middleName[0] + "." : ""}`.trim(),
+      }));
+
+  // Состав комиссии СПО: 1) явный input, 2) адресат письма (он же представитель СПО),
+  // 3) пусто (печатается «Представитель: —» — пользователь сам впишет).
+  const commissionSpo = input.commissionSpo?.length
+    ? input.commissionSpo
+    : [{
+        position: addressee.position || "Представитель",
+        name: addressee.shortName || `${addressee.lastName} ${addressee.firstName[0]}.`,
+      }];
+
+  // Дефекты: 1) явный input, 2) findings последнего проведённого выезда,
+  // разбитые по строкам в нумерованный список, 3) одна пустая строка.
+  let defects: Array<{ n: number; description: string; deadline: string }>;
+  if (input.defects?.length) {
+    defects = input.defects.map((d) => ({
+      n: d.n,
+      description: d.description,
+      deadline: d.deadline || (input.remedyDate ? dateLong(input.remedyDate) : "—"),
+    }));
+  } else {
+    const lastVisit = await prisma.visit.findFirst({
+      where: { caseId: input.caseId, status: "done" },
+      orderBy: { visitDate: "desc" },
+    });
+    const fromVisit = (lastVisit?.findings || "")
+      .split(/\n+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    defects = fromVisit.length
+      ? fromVisit.map((description, i) => ({
+          n: i + 1,
+          description,
+          deadline: input.remedyDate ? dateLong(input.remedyDate) : "—",
+        }))
+      : [{
+          n: 1,
+          description: "—",
+          deadline: input.remedyDate ? dateLong(input.remedyDate) : "—",
+        }];
+  }
 
   const clauses = safeJSON<{
     warranty?: string[]; remedy?: string[]; responsibility?: string[];
@@ -276,12 +337,9 @@ async function buildPayload(input: RenderInput): Promise<Record<string, unknown>
       shortName: c.subcontractor.shortName,
       fullName: c.subcontractor.fullName,
     },
-    commission_rks: [
-      { position: "Главный специалист", name: "М.Ю. Пальков" },
-      { position: "Зам. рук. отдела эксплуатации", name: "А.С. Горчаков" },
-    ],
-    commission_spo: [{ position: "Представитель", name: "________________" }],
-    defects: [{ n: 1, description: "________________________________________", deadline: input.remedyDate ? dateLong(input.remedyDate) : "—" }],
+    commission_rks: commissionRks,
+    commission_spo: commissionSpo,
+    defects,
   };
 
   return payload;

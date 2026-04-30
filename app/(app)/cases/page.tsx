@@ -6,10 +6,15 @@ export const dynamic = "force-dynamic";
 
 const FILTERS = [
   { key: "all", label: "Все", tone: undefined as undefined | "amber" | "bordeaux" | "moss" },
-  { key: "burning", label: "Просрочено", tone: "bordeaux" as const },
+  // «Горящие» = ближайший дедлайн ≤ 3 дня (включая просроченные).
+  // Тот же критерий, что и в дашборде и в счётчике сайдбара.
+  { key: "burning", label: "Горящие", tone: "bordeaux" as const },
   { key: "in_work", label: "В работе у СПО", tone: "amber" as const },
   { key: "reply", label: "К ответу в ППК", tone: "moss" as const },
 ];
+
+const isBurning = (days: number | null | undefined) =>
+  days != null && days <= 3;
 
 export default async function CasesPage(
   { searchParams }: { searchParams: Promise<{ filter?: string }> },
@@ -20,7 +25,7 @@ export default async function CasesPage(
   const rows = filter === "all"
     ? allRows
     : filter === "burning"
-      ? allRows.filter((r) => r.nearestDeadline && (r.nearestDeadline.days ?? 0) < 0)
+      ? allRows.filter((r) => isBurning(r.nearestDeadline?.days))
       : filter === "in_work"
         ? allRows.filter((r) => r.stateTone === "amber")
         : filter === "reply"
@@ -29,10 +34,17 @@ export default async function CasesPage(
 
   const counts = {
     all: allRows.length,
-    burning: allRows.filter((r) => r.nearestDeadline && (r.nearestDeadline.days ?? 0) < 0).length,
+    burning: allRows.filter((r) => isBurning(r.nearestDeadline?.days)).length,
     in_work: allRows.filter((r) => r.stateTone === "amber").length,
     reply: allRows.filter((r) => r.stateTone === "moss").length,
   } as Record<string, number>;
+
+  const emptyHints: Record<string, string> = {
+    all: "Создайте первое дело из входящего письма или вручную.",
+    burning: "Сейчас нет дел с ближайшим дедлайном — порядок.",
+    in_work: "Нет дел в статусе ожидания ответа от СПО.",
+    reply: "Нет дел, готовых к отправке ответа в ППК.",
+  };
 
   return (
     <section className="px-8 pt-8 pb-16">
@@ -41,7 +53,7 @@ export default async function CasesPage(
           <div className="micro text-muted">Реестр</div>
           <h1 className="display text-[52px] leading-none mt-2 tracking-tight">Дела</h1>
           <p className="read mt-2 text-[16px] text-muted">
-            {counts.all} активных, {counts.burning} просрочено, {counts.reply} к ответу в ППК
+            {counts.all} активных, {counts.burning} горящих, {counts.reply} к ответу в ППК
           </p>
         </div>
         <div className="flex gap-2">
@@ -71,7 +83,7 @@ export default async function CasesPage(
       </div>
 
       <div className="frame">
-        <CaseRowsTable rows={rows} />
+        <CaseRowsTable rows={rows} emptyHint={emptyHints[filter] || emptyHints.all} />
       </div>
     </section>
   );

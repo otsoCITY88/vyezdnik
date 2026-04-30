@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { dateLong, dateShort, relativeDay, safeJSON, daysFromToday } from "@/lib/format";
 import { CASE_STATES, STATE_LABELS, STATE_TONE, templatesAvailableIn, CaseState } from "@/lib/workflow";
 import { Pill, PillTone } from "@/components/Pill";
+import { docStatusLabel, DOC_STATUS_TONE } from "@/lib/labels";
 import { CaseActionsBar } from "@/components/CaseActionsBar";
 import { AiCaseAssistant } from "@/components/AiCaseAssistant";
 import { CaseVisitsBlock, VisitView } from "@/components/CaseVisitsBlock";
@@ -285,8 +286,8 @@ export default async function CaseDetail(
                       </div>
                       <div className="truncate">{d.subject || "—"}</div>
                     </div>
-                    <Pill tone={d.status === "sent" ? "moss" : d.status === "rendered" ? "indigo" : "neutral"}>
-                      {d.status}
+                    <Pill tone={DOC_STATUS_TONE[d.status] ?? "neutral"}>
+                      {docStatusLabel(d.status)}
                     </Pill>
                   </li>
                 ))}

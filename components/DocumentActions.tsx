@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Modal } from "./Modal";
 import { Pill } from "./Pill";
 import { SendDocumentButton } from "./SendDocumentButton";
+import { edoStatusLabel } from "@/lib/labels";
 
 export interface DocumentMini {
   id: string;
@@ -57,7 +58,11 @@ export function DocumentActions({ doc }: { doc: DocumentMini }) {
     <div className="flex flex-col gap-1.5 items-end">
       <div className="flex gap-1.5 items-center flex-wrap">
         {doc.signedAt && <span title={doc.signatureFingerprint || ""}><Pill tone="moss">УКЭП</Pill></span>}
-        {doc.edoStatus && <Pill tone={doc.edoStatus === "delivered" ? "moss" : "indigo"}>ЭДО · {doc.edoStatus}</Pill>}
+        {doc.edoStatus && (
+          <Pill tone={doc.edoStatus === "delivered" || doc.edoStatus === "signed" ? "moss" : "indigo"}>
+            ЭДО · {edoStatusLabel(doc.edoStatus)}
+          </Pill>
+        )}
       </div>
       <div className="flex gap-1.5 items-center flex-wrap">
         {doc.hasFile && (

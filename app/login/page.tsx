@@ -1,14 +1,22 @@
 import { signIn } from "@/auth";
-import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+
+const ERROR_LABELS: Record<string, string> = {
+  CredentialsSignin: "Неверный e-mail. Проверьте, что пользователь существует.",
+  AccessDenied: "Доступ запрещён.",
+  Configuration: "Ошибка конфигурации авторизации.",
+  Verification: "Ссылка для входа недействительна или устарела.",
+};
 
 export default async function LoginPage(
   { searchParams }: { searchParams: Promise<{ from?: string; error?: string }> },
 ) {
   const params = await searchParams;
   const from = params?.from || "/";
-  const users = await prisma.user.findMany({ orderBy: { fullName: "asc" } });
+  const errorLabel = params?.error
+    ? ERROR_LABELS[params.error] || `Ошибка входа: ${params.error}`
+    : null;
 
   return (
     <div className="min-h-screen grid place-items-center" style={{ background: "var(--paper)" }}>
@@ -24,33 +32,37 @@ export default async function LoginPage(
         <form
           action={async (formData: FormData) => {
             "use server";
-            await signIn("credentials", { email: String(formData.get("email") || ""), redirectTo: from });
+            await signIn("credentials", {
+              email: String(formData.get("email") || ""),
+              redirectTo: from,
+            });
           }}
           className="grid gap-4"
         >
           <div className="field">
             <label>E-mail</label>
-            <input name="email" type="email" required placeholder="palkov.my@rks-nr.ru" defaultValue={users[0]?.email || ""} />
-            <div className="micro-2 text-muted mt-1">Прототип: пароль не нужен — введите e-mail из списка ниже</div>
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="name@rks-nr.ru"
+              autoComplete="email"
+              autoFocus
+            />
+            <div className="micro-2 text-muted mt-1">
+              Введите e-mail вашего аккаунта. Если у вас ещё нет доступа — обратитесь к администратору.
+            </div>
           </div>
           <button type="submit" className="btn bordeaux">Войти</button>
-          {params?.error && (
-            <div className="text-bordeaux text-[13px] frame p-3" style={{ background: "var(--bordeaux-bg)" }}>
-              Ошибка входа: {params.error}
+          {errorLabel && (
+            <div
+              className="text-bordeaux text-[13px] frame p-3"
+              style={{ background: "var(--bordeaux-bg)" }}
+            >
+              {errorLabel}
             </div>
           )}
         </form>
-
-        <div className="ruler my-5" />
-        <div className="micro text-muted mb-2">Доступные аккаунты ({users.length})</div>
-        <ul className="text-[12.5px] grid gap-1">
-          {users.map((u) => (
-            <li key={u.id} className="flex justify-between gap-2">
-              <span>{u.fullName}</span>
-              <span className="mono text-muted">{u.email}</span>
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   );

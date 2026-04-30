@@ -10,10 +10,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
   session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  // Все системные страницы Auth.js перенаправлены на /login (русифицирован).
+  // Без этого signOut/error показывали дефолтные англоязычные страницы.
+  pages: {
+    signIn: "/login",
+    signOut: "/login",
+    error: "/login",
+    verifyRequest: "/login",
+    newUser: "/login",
+  },
   providers: [
     Credentials({
-      name: "Email",
+      name: "E-mail",
       credentials: {
         email: { label: "E-mail", type: "email" },
       },

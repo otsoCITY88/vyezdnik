@@ -4,30 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOutAction } from "@/lib/auth-actions";
 
-const groups: Array<{ title: string; items: Array<{ href: string; label: string; badge?: string; badgeKind?: "amber" | "ghost" }> }> = [
-  {
-    title: "Работа",
-    items: [
-      { href: "/", label: "Сегодня" },
-      { href: "/cases", label: "Дела" },
-      { href: "/inbox", label: "Входящие", badge: "2", badgeKind: "amber" },
-      { href: "/outgoing", label: "Реестр исх." },
-      { href: "/calendar", label: "Календарь" },
-      { href: "/analytics", label: "Аналитика" },
-    ],
-  },
-  {
-    title: "Справочники",
-    items: [
-      { href: "/buildings", label: "МКД" },
-      { href: "/organizations", label: "Контрагенты" },
-      { href: "/contracts", label: "Договоры" },
-      { href: "/users", label: "Пользователи" },
-      { href: "/templates", label: "Шаблоны" },
-    ],
-  },
-];
-
 export type SidebarUser = {
   fullName: string;
   shortName: string | null;
@@ -36,7 +12,48 @@ export type SidebarUser = {
   isAdmin: boolean;
 };
 
-export function Sidebar({ user }: { user: SidebarUser }) {
+export type SidebarCounters = {
+  inboxUnlinked: number;   // входящих писем без привязки к делу
+  burningCases: number;    // дел с горящим дедлайном (≤3 дня)
+};
+
+export function Sidebar({ user, counters }: { user: SidebarUser; counters: SidebarCounters }) {
+  const groups: Array<{ title: string; items: Array<{ href: string; label: string; badge?: string; badgeKind?: "amber" | "bordeaux" | "ghost" }> }> = [
+    {
+      title: "Работа",
+      items: [
+        { href: "/", label: "Сегодня" },
+        {
+          href: "/cases",
+          label: "Дела",
+          ...(counters.burningCases > 0
+            ? { badge: String(counters.burningCases), badgeKind: "bordeaux" as const }
+            : {}),
+        },
+        {
+          href: "/inbox",
+          label: "Входящие",
+          ...(counters.inboxUnlinked > 0
+            ? { badge: String(counters.inboxUnlinked), badgeKind: "amber" as const }
+            : {}),
+        },
+        { href: "/outgoing", label: "Реестр исх." },
+        { href: "/calendar", label: "Календарь" },
+        { href: "/analytics", label: "Аналитика" },
+      ],
+    },
+    {
+      title: "Справочники",
+      items: [
+        { href: "/buildings", label: "МКД" },
+        { href: "/organizations", label: "Контрагенты" },
+        { href: "/contracts", label: "Договоры" },
+        { href: "/users", label: "Пользователи" },
+        { href: "/templates", label: "Шаблоны" },
+      ],
+    },
+  ];
+
   const pathname = usePathname();
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");

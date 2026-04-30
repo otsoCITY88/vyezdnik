@@ -1,16 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CaseRow } from "@/lib/queries";
 import { Pill, PillTone } from "./Pill";
 import { dateShort, relativeDay } from "@/lib/format";
 
-export function CaseRowsTable({ rows, showIncoming = true }: { rows: CaseRow[]; showIncoming?: boolean }) {
+export function CaseRowsTable({
+  rows,
+  showIncoming = true,
+  emptyHint,
+}: {
+  rows: CaseRow[];
+  showIncoming?: boolean;
+  /** Подпись под заголовком пустого состояния. По умолчанию — про фильтры. */
+  emptyHint?: string;
+}) {
   if (rows.length === 0) {
     return (
       <div className="p-10 text-center text-muted">
-        <div className="display text-[20px]">Ничего не найдено</div>
-        <div className="text-[13px] mt-2">Сбросьте фильтры или создайте новое дело</div>
+        <div className="display text-[20px]">Дел пока нет</div>
+        <div className="text-[13px] mt-2">
+          {emptyHint || "Создайте первое дело из входящего письма или вручную."}
+        </div>
       </div>
     );
   }
@@ -37,6 +49,7 @@ export function CaseRowsTable({ rows, showIncoming = true }: { rows: CaseRow[]; 
 }
 
 function Row({ r, showIncoming }: { r: CaseRow; showIncoming: boolean }) {
+  const router = useRouter();
   const deadlineCls = r.nearestDeadline?.days != null
     ? r.nearestDeadline.days < 0
       ? "text-bordeaux"
@@ -46,7 +59,10 @@ function Row({ r, showIncoming }: { r: CaseRow; showIncoming: boolean }) {
     : "text-muted";
 
   return (
-    <tr onClick={() => (window.location.href = `/cases/${r.id}`)}>
+    <tr
+      onClick={() => router.push(`/cases/${r.id}`)}
+      style={{ cursor: "pointer" }}
+    >
       <td className="mono whitespace-nowrap">{r.caseNumber}</td>
       <td>
         <div>{r.buildingShort}</div>

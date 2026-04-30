@@ -12,6 +12,33 @@ export default async function Page() {
   const { allRows, burning, incomingNoCase, replyToPpk, todayVisits, weekPlannedVisits } = await dashboardData();
   const nextNumber = await peekOutgoingNumber();
 
+  // Свежая система — ни дел, ни входящих. Показываем onboarding вместо пугающих
+  // "0 горящих дел, 0 входящих".
+  const isEmpty = allRows.length === 0 && incomingNoCase.length === 0;
+
+  if (isEmpty) {
+    return (
+      <section className="px-8 pt-8 pb-16">
+        <div className="micro text-muted">{weekday(today)}</div>
+        <h1 className="display mt-2 text-[68px] leading-[0.95] tracking-tight">
+          {dateHeadline(today)}
+        </h1>
+        <div className="ruler my-8" />
+        <div className="frame p-10 max-w-[720px]">
+          <div className="display text-[28px]">Добро пожаловать в РКС·Выезд</div>
+          <p className="read mt-3 text-[16px]" style={{ color: "var(--ink-2)" }}>
+            Здесь будут отображаться горящие дела, выезды комиссии и входящие письма от ППК.
+            Чтобы начать — загрузите первое входящее или заведите дело вручную.
+          </p>
+          <div className="flex gap-2 mt-6">
+            <Link href="/inbox" className="btn bordeaux">Загрузить входящее</Link>
+            <Link href="/cases/new" className="btn ghost">＋ Создать дело</Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="px-8 pt-8 pb-16">
       {/* heading */}
@@ -124,7 +151,7 @@ export default async function Page() {
           </div>
           <div className="flex items-center gap-2">
             <Link href="/cases" className="pill ghost">Все · {allRows.length}</Link>
-            <Link href="/cases?filter=burning" className="pill ghost">Просрочено · {burning.length}</Link>
+            <Link href="/cases?filter=burning" className="pill ghost">Горящие · {burning.length}</Link>
             <Link href="/cases?filter=reply" className="pill ghost">К ответу · {replyToPpk.length}</Link>
           </div>
         </div>

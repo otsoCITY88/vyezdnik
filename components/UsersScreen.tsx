@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "./Modal";
 import { Pill } from "./Pill";
+import { userRoleLabel, userRoleTone } from "@/lib/labels";
 
 export interface UserView {
   id: string; email: string; fullName: string;
@@ -42,9 +43,9 @@ export function UsersScreen({ users }: { users: UserView[] }) {
                 <td>{u.position || "—"}</td>
                 <td className="mono">{u.email}</td>
                 <td>
-                  {u.isAdmin && <Pill tone="bordeaux">admin</Pill>}{" "}
-                  {u.isHead && <Pill tone="indigo">head</Pill>}
-                  {!u.isHead && !u.isAdmin && <Pill>specialist</Pill>}
+                  <Pill tone={userRoleTone({ isAdmin: !!u.isAdmin, isHead: !!u.isHead })}>
+                    {userRoleLabel({ isAdmin: !!u.isAdmin, isHead: !!u.isHead })}
+                  </Pill>
                 </td>
                 <td>{u.cases > 0 ? <Pill tone="indigo">{u.cases}</Pill> : <span className="text-muted">0</span>}</td>
                 <td><button className="btn ghost sm" onClick={() => setEdit(u)}>✎</button></td>

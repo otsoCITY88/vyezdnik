@@ -4,6 +4,7 @@ import { dateShort, safeJSON } from "@/lib/format";
 import { peekOutgoingNumber } from "@/lib/numbering";
 import { Pill } from "@/components/Pill";
 import { DocumentActions, DocumentMini } from "@/components/DocumentActions";
+import { docStatusLabel, DOC_STATUS_TONE } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -87,8 +88,8 @@ export default async function OutgoingPage() {
                   <td>{d.case.subcontractor.shortName}</td>
                   <td>{d.signatoryId ? sigById[d.signatoryId]?.shortName : "—"}</td>
                   <td>
-                    <Pill tone={d.status === "sent" ? "moss" : d.status === "signed" ? "indigo" : "neutral"}>
-                      {d.status}
+                    <Pill tone={DOC_STATUS_TONE[d.status] ?? "neutral"}>
+                      {docStatusLabel(d.status)}
                     </Pill>
                   </td>
                   <td><DocumentActions doc={mini} /></td>

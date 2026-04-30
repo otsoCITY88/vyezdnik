@@ -6,10 +6,11 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Sidebar, type SidebarUser } from "@/components/Sidebar";
+import { Sidebar, type SidebarUser, type SidebarCounters } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { CommandPalette } from "@/components/CommandPalette";
 import { PwaBootstrap } from "@/components/PwaBootstrap";
+import { daysFromToday, safeJSON } from "@/lib/format";
 
 function makeInitials(fullName: string, shortName?: string | null): string {
   // Если есть shortName в формате "И.О. Фамилия" — берём первую букву
@@ -52,10 +53,32 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     isAdmin: dbUser.isAdmin,
   };
 
+  // Счётчики для бейджей в сайдбаре — реальные значения из БД, не захардкожены.
+  const [inboxUnlinked, openCases] = await Promise.all([
+    prisma.incomingLetter.count({ where: { linkedCaseId: null } }),
+    prisma.case.findMany({
+      where: { state: { not: "closed" } },
+      select: { deadlines: true },
+    }),
+  ]);
+
+  // Горящие дела — те, у которых ближайший дедлайн ≤ 3 дня (включая просроченные).
+  const burningCases = openCases.filter((c) => {
+    const deadlines = safeJSON<Record<string, string>>(c.deadlines, {});
+    const days = Object.values(deadlines)
+      .filter(Boolean)
+      .map((iso) => daysFromToday(iso))
+      .filter((d): d is number => d !== null);
+    if (!days.length) return false;
+    return Math.min(...days) <= 3;
+  }).length;
+
+  const counters: SidebarCounters = { inboxUnlinked, burningCases };
+
   return (
     <>
       <div className="grid min-h-screen" style={{ gridTemplateColumns: "248px 1fr" }}>
-        <Sidebar user={sidebarUser} />
+        <Sidebar user={sidebarUser} counters={counters} />
         <main className="relative">
           <Topbar />
           {children}
