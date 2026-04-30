@@ -117,6 +117,9 @@ model IncomingLetter {
   applicantOrigin       String?  // «Мариупольский филиал Единого регионального фонда…»
   applicantLetterNumber String?
   applicantLetterDate   DateTime?
+  // Срок устранения замечания, прописанный в самом письме (если ППК указал).
+  // Используется как дефолтный дедлайн `remedy` при заведении дела из этого письма.
+  requestedRemedyDate   DateTime?
 
   attachedFile          String?  // путь к загруженному PDF
   pageCount             Int?
