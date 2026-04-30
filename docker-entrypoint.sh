@@ -30,6 +30,11 @@ else
   node "$PRISMA_BIN" db push --skip-generate || true
 fi
 
+# Гарантированный admin-пользователь — если в users пусто (например БД
+# существовала, но была пуста после упавшего seed), создаём admin@rks-nr.ru.
+# Идемпотентно: ничего не делает если хоть один юзер уже есть.
+node "$TSX_BIN" scripts/ensure-admin.ts || echo "⚠ ensure-admin упал — пропускаю"
+
 # Кастомные .docx-шаблоны лежат в /app/templates — пересобираем если их нет
 if [ ! -f "/app/templates/T3_letter_to_spo_remedy.docx" ]; then
   echo "▸ Пересборка .docx-шаблонов…"

@@ -1,9 +1,8 @@
+// Корневой layout — только html/body и общий шрифт + meta.
+// Сайдбар/топбар вынесены в app/(app)/layout.tsx, чтобы login (вне группы) был чистый.
+
 import "./globals.css";
 import type { Metadata } from "next";
-import { Sidebar } from "@/components/Sidebar";
-import { Topbar } from "@/components/Topbar";
-import { CommandPalette } from "@/components/CommandPalette";
-import { PwaBootstrap } from "@/components/PwaBootstrap";
 
 export const metadata: Metadata = {
   title: "РКС·Выезд",
@@ -24,15 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#14181F" />
       </head>
       <body className="font-sans">
-        <div className="grid min-h-screen" style={{ gridTemplateColumns: "248px 1fr" }}>
-          <Sidebar />
-          <main className="relative">
-            <Topbar />
-            {children}
-          </main>
-        </div>
-        <CommandPalette />
-        <PwaBootstrap />
+        {children}
       </body>
     </html>
   );
