@@ -50,6 +50,9 @@ export function CaseRowsTable({
 
 function Row({ r, showIncoming }: { r: CaseRow; showIncoming: boolean }) {
   const router = useRouter();
+  // Просрочено = ближайший дедлайн в прошлом. Подсвечиваем всю строку
+  // мягким бордовым фоном — заметно но не агрессивно.
+  const isOverdue = r.nearestDeadline?.days != null && r.nearestDeadline.days < 0;
   const deadlineCls = r.nearestDeadline?.days != null
     ? r.nearestDeadline.days < 0
       ? "text-bordeaux"
@@ -61,7 +64,10 @@ function Row({ r, showIncoming }: { r: CaseRow; showIncoming: boolean }) {
   return (
     <tr
       onClick={() => router.push(`/cases/${r.id}`)}
-      style={{ cursor: "pointer" }}
+      style={{
+        cursor: "pointer",
+        background: isOverdue ? "var(--bordeaux-bg)" : undefined,
+      }}
     >
       <td className="mono whitespace-nowrap">{r.caseNumber}</td>
       <td>
