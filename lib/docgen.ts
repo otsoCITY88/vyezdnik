@@ -136,10 +136,18 @@ function filenameFor(input: RenderInput, payload: Record<string, unknown>): stri
   return `${num}_${dateStr}_${title}_${addr}.docx`;
 }
 
-/** Сохраняет буфер в /storage и возвращает путь. */
+/**
+ * Сохраняет буфер в `<storage>/outbox/<filename>` и возвращает путь.
+ *
+ * Файлы лежат в подпапке `outbox/`, потому что универсальный download
+ * `/api/files/download` пускает только пути с whitelisted-префиксами,
+ * а `outbox/` — один из них. Раньше файлы лежали в корне STORAGE_DIR
+ * и не скачивались через CaseFilesBlock.
+ */
 export function saveRendered(buffer: Buffer, filename: string): string {
-  mkdirSync(STORAGE_DIR, { recursive: true });
-  const fullPath = join(STORAGE_DIR, filename);
+  const outboxDir = join(STORAGE_DIR, "outbox");
+  mkdirSync(outboxDir, { recursive: true });
+  const fullPath = join(outboxDir, filename);
   writeFileSync(fullPath, buffer);
   return fullPath;
 }
