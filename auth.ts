@@ -10,14 +10,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
   session: { strategy: "jwt" },
-  // Все системные страницы Auth.js перенаправлены на /login (русифицирован).
-  // Без этого signOut/error показывали дефолтные англоязычные страницы.
+  // ВАЖНО: указываем ТОЛЬКО signIn. Если задать pages.signOut/error — Auth.js v5
+  // в связке с server-action signOut перестаёт корректно делать редирект и
+  // возвращает пустой ответ ⇒ браузер показывает белую страницу. Дефолтные
+  // системные страницы Auth.js (англ.) пользователь не увидит, потому что:
+  //   • signOut делается через наш server action в lib/auth-actions.ts
+  //   • error → редиректит на /login?error=… (мы это обрабатываем сами)
+  //   • любой неаутентифицированный URL middleware заворачивает на /login
   pages: {
     signIn: "/login",
-    signOut: "/login",
-    error: "/login",
-    verifyRequest: "/login",
-    newUser: "/login",
   },
   providers: [
     Credentials({
