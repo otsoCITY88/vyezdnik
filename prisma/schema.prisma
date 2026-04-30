@@ -380,3 +380,28 @@ model AiMessage {
   content    String
   createdAt  DateTime @default(now())
 }
+
+// =============================================================
+//  Версионирование файлов
+// =============================================================
+//
+// При каждой перезаливке файла (входящее письмо, сгенерированный документ,
+// фото визита) создаётся новая запись с инкрементом version.
+// Старый файл остаётся на диске и в БД — можно скачать или откатить.
+
+model FileRevision {
+  id           String   @id @default(cuid())
+  ownerType    String   // "incoming" | "document" | "visit_photo"
+  ownerId      String   // FK по ownerType (соответствует id IncomingLetter / Document / Visit)
+  version      Int      // автоинкремент в рамках (ownerType, ownerId)
+  path         String   // абсолютный путь к файлу в storage
+  filename     String   // оригинальное имя при загрузке
+  size         Int
+  mime         String?
+  uploadedById String?  // User.id, кто загрузил
+  uploadedAt   DateTime @default(now())
+  comment      String?  // напр. «исправил скан страницы 3» / «откат к v2»
+
+  @@unique([ownerType, ownerId, version])
+  @@index([ownerType, ownerId])
+}
