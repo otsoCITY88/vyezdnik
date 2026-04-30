@@ -15,8 +15,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: vyezdnik:latest
-    container_name: vyezdnik
+    # image и container_name НЕ задаём — Coolify сам генерит уникальные имена
+    # (с UUID-суффиксом), чтобы не было конфликтов между приложениями.
     restart: unless-stopped
     # expose: порт виден внутри docker-сети (Coolify Traefik → app:3030).
     # Чтобы открыть наружу локально — раскомментируй ports ниже.
@@ -26,15 +26,17 @@ services:
     #   - "3030:3030"
     environment:
       # Coolify v4 magic: маршрутизирует FQDN, заданный в UI (Application → Domains),
-      # на этот сервис и порт. Параллельно Coolify подставляет SERVICE_FQDN_APP/SERVICE_URL_APP.
+      # на этот сервис и порт. Параллельно Coolify подставляет SERVICE_URL_APP (с https://)
+      # и SERVICE_FQDN_APP (без протокола).
       SERVICE_FQDN_APP_3030: /
       NODE_ENV: production
       DATABASE_FILE: /app/data/prod.db
       STORAGE_DIR: /app/storage
       SEED_ON_INIT: "true"               # засеять демо-данными при первом запуске
       AUTH_SECRET: ${AUTH_SECRET:-change-me-please-openssl-rand-base64-32}
-      # AUTH_URL обязан совпадать с публичным URL — берём из Coolify magic var.
-      AUTH_URL: ${SERVICE_FQDN_APP:-http://localhost:3030}
+      # AUTH_URL обязан совпадать с публичным URL — берём из Coolify magic var
+      # (SERVICE_URL_APP уже включает https://).
+      AUTH_URL: ${SERVICE_URL_APP:-http://localhost:3030}
       AUTH_TRUST_HOST: "true"
       # Опциональные интеграции — пробрось при необходимости через .env / Coolify Env
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
