@@ -7,6 +7,7 @@ import { CaseState, STATE_LABELS, STATE_TONE } from "./workflow";
 export interface CaseRow {
   id: string;
   caseNumber: string;
+  buildingId: string;
   buildingShort: string;
   buildingFull: string;
   applicant: string;
@@ -44,6 +45,7 @@ export async function listCases(filter?: { responsibleEmail?: string; tone?: "am
     return {
       id: c.id,
       caseNumber: c.caseNumber,
+      buildingId: c.buildingId,
       buildingShort: c.building.shortAddress,
       buildingFull: c.building.fullAddress,
       applicant: c.incomingLetter?.applicantName || "—",

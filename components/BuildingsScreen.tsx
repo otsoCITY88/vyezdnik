@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Pill } from "./Pill";
 import { AddBuildingModal } from "./AddBuildingModal";
 import { EditBuildingModal, BuildingEditView } from "./EditBuildingModal";
 
 export interface BuildingView {
   id: string; fullAddress: string; subcontractorShort?: string | null;
-  contractNumber?: string | null; cases: number;
+  contractNumber?: string | null;
+  cases: number;          // всего дел по объекту
+  casesOpen: number;      // открытых
+  casesBurning: number;   // горящих (≤ 3 дня до дедлайна)
   city: string; street: string; house: string; apartment?: string | null; porch?: string | null;
   subcontractorId?: string | null; contractId?: string | null;
 }
@@ -19,6 +23,7 @@ export function BuildingsScreen({
 }: {
   buildings: BuildingView[]; subcontractors: Opt[]; contracts: Opt[];
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<BuildingEditView | null>(null);
   const [filter, setFilter] = useState("");
@@ -58,25 +63,40 @@ export function BuildingsScreen({
         <table className="editorial">
           <thead>
             <tr>
-              <th>Адрес</th><th>СПО</th><th>Договор</th><th>Дел</th><th></th>
+              <th>Адрес</th>
+              <th>СПО</th>
+              <th>Договор</th>
+              <th>Дел всего</th>
+              <th>Открытых</th>
+              <th>Горящих</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((b) => (
-              <tr key={b.id} className="flat">
+              <tr
+                key={b.id}
+                className="flat"
+                onClick={() => router.push(`/buildings/${b.id}`)}
+                style={{ cursor: "pointer" }}
+              >
                 <td>{b.fullAddress}</td>
                 <td>{b.subcontractorShort || "—"}</td>
                 <td className="mono">{b.contractNumber ? `№ ${b.contractNumber}` : "—"}</td>
-                <td>{b.cases > 0 ? <Pill tone="indigo">{b.cases}</Pill> : <span className="text-muted">—</span>}</td>
-                <td><button className="btn ghost sm" onClick={() => setEdit({
-                  id: b.id, city: b.city, street: b.street, house: b.house,
-                  apartment: b.apartment, porch: b.porch,
-                  subcontractorId: b.subcontractorId, contractId: b.contractId,
-                })}>✎</button></td>
+                <td>{b.cases > 0 ? <span className="mono">{b.cases}</span> : <span className="text-muted">—</span>}</td>
+                <td>{b.casesOpen > 0 ? <Pill tone="indigo">{b.casesOpen}</Pill> : <span className="text-muted">—</span>}</td>
+                <td>{b.casesBurning > 0 ? <Pill tone="bordeaux">{b.casesBurning}</Pill> : <span className="text-muted">—</span>}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <button className="btn ghost sm" onClick={() => setEdit({
+                    id: b.id, city: b.city, street: b.street, house: b.house,
+                    apartment: b.apartment, porch: b.porch,
+                    subcontractorId: b.subcontractorId, contractId: b.contractId,
+                  })}>✎</button>
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="text-center text-muted p-8">ничего не найдено</td></tr>
+              <tr><td colSpan={7} className="text-center text-muted p-8">ничего не найдено</td></tr>
             )}
           </tbody>
         </table>
