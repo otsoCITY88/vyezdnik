@@ -64,7 +64,9 @@ services:
       - vyezdnik_data:/app/data         # БД (sqlite файл)
       - vyezdnik_storage:/app/storage   # сгенерированные .docx, фото, ЭДО-пакеты
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3030/api/health"]
+      # 127.0.0.1, не localhost — busybox wget в alpine резолвит localhost
+      # в IPv6 (::1), а Next.js standalone слушает только IPv4 (0.0.0.0).
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3030/api/health"]
       interval: 30s
       timeout: 5s
       start_period: 30s
