@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-
-const STORAGE = process.env.STORAGE_DIR || join(process.cwd(), "storage");
+import { saveFileRevision } from "@/lib/file-revisions";
 
 export async function POST(req: NextRequest) {
   const form = await req.formData();
@@ -24,17 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing required fields" }, { status: 400 });
   }
 
-  // Сохраним файл (если есть)
-  let attachedFile: string | null = null;
-  if (file && file instanceof File && file.size > 0) {
-    mkdirSync(join(STORAGE, "incoming"), { recursive: true });
-    const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Zа-яА-Я0-9._-]+/g, "_")}`;
-    const fullPath = join(STORAGE, "incoming", safeName);
-    const ab = await file.arrayBuffer();
-    writeFileSync(fullPath, Buffer.from(ab));
-    attachedFile = fullPath;
-  }
-
+  // 1. Создаём запись входящего без файла — нужен id для пути версии.
   const created = await prisma.incomingLetter.create({
     data: {
       fromOrganizationId,
@@ -47,10 +34,27 @@ export async function POST(req: NextRequest) {
       applicantLetterDate: applicantLetterDate ? new Date(applicantLetterDate) : null,
       requestedRemedyDate: requestedRemedyDate ? new Date(requestedRemedyDate) : null,
       buildingId: buildingId || null,
-      attachedFile,
+      attachedFile: null,
       pageCount: pageCount || null,
     },
   });
+
+  // 2. Если файл есть — сохраняем через версионирование (v1) и обновляем
+  // attachedFile на путь к этой версии.
+  if (file && file instanceof File && file.size > 0) {
+    const buf = Buffer.from(await file.arrayBuffer());
+    const { path } = await saveFileRevision({
+      ownerType: "incoming",
+      ownerId: created.id,
+      buffer: buf,
+      filename: file.name,
+      mime: file.type || undefined,
+    });
+    await prisma.incomingLetter.update({
+      where: { id: created.id },
+      data: { attachedFile: path },
+    });
+  }
 
   return NextResponse.json({ id: created.id });
 }
