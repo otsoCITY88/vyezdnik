@@ -69,10 +69,10 @@ export async function GET(req: Request) {
   const mime = MIME[ext] || "application/octet-stream";
   const filename = basename(fullPath);
 
-  return new NextResponse(buf, {
+  return new NextResponse(buf as unknown as BodyInit, {
     headers: {
       "Content-Type": mime,
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
       "Content-Length": String(buf.length),
     },
   });
