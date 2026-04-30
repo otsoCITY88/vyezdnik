@@ -1,47 +1,37 @@
-// Простой service worker для PWA: offline-shell + push-уведомления.
-
-const CACHE = "rks-vyezd-v3";
-const APP_SHELL = ["/", "/manifest.json"];
+// SELF-DESTRUCT SERVICE WORKER
+//
+// Старые версии этого SW агрессивно кешировали HTML-страницы (cache-first
+// для навигаций), из-за чего после деплоя у пользователей оставались
+// битые страницы — закешированный HTML тянул протухшие JS-чанки и
+// рендерился пустым / с ERR_FAILED.
+//
+// Этот файл специально пустой по логике — задача только одна:
+//   1) при install/activate — удалить ВСЕ старые кеши
+//   2) разрегистрировать сам SW
+//   3) сказать клиентам перезагрузиться, чтобы они начали ходить напрямую в сеть
+//
+// Когда понадобится реальный PWA с offline/push — переписать с нуля,
+// network-first для навигаций.
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(APP_SHELL).catch(() => {})));
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-  );
-  self.clients.claim();
+  e.waitUntil((async () => {
+    // Чистим всё, что было закешировано предыдущими версиями SW.
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+    // Перехватываем существующих клиентов…
+    await self.clients.claim();
+    // …разрегистрируем сами себя…
+    await self.registration.unregister();
+    // …и просим клиентов перезагрузить страницу — без кеша SW.
+    const clients = await self.clients.matchAll({ type: "window" });
+    for (const c of clients) {
+      try { c.navigate(c.url); } catch { /* ignore */ }
+    }
+  })());
 });
 
-self.addEventListener("fetch", (e) => {
-  // network-first для API, cache-first для статики
-  const url = new URL(e.request.url);
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_next/")) return;
-  e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request).catch(() => cached || new Response("offline", { status: 503 })))
-  );
-});
-
-// Push-уведомления
-self.addEventListener("push", (e) => {
-  let data = { title: "РКС·Виезд", body: "Уведомление", url: "/" };
-  try { data = { ...data, ...e.data.json() }; } catch {/* not json */}
-  e.waitUntil(self.registration.showNotification(data.title, {
-    body: data.body,
-    icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
-    tag: data.tag || "default",
-    data: { url: data.url || "/" },
-  }));
-});
-
-self.addEventListener("notificationclick", (e) => {
-  e.notification.close();
-  const url = e.notification.data?.url || "/";
-  e.waitUntil(self.clients.matchAll({ type: "window" }).then((clients) => {
-    for (const c of clients) { if ("focus" in c) { c.navigate(url); return c.focus(); } }
-    if (self.clients.openWindow) return self.clients.openWindow(url);
-  }));
-});
+// Никаких fetch-обработчиков. Все запросы идут напрямую в сеть.
