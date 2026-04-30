@@ -63,5 +63,22 @@ export async function POST(
     });
   }
 
+  // Аудит-запись: откат версии файла — операция повышенного риска,
+  // важно сохранить кто и когда это сделал.
+  await prisma.auditLog.create({
+    data: {
+      userId: dbUser?.id || null,
+      action: "file.rollback",
+      entityType: rev.ownerType,
+      entityId: rev.ownerId,
+      payload: JSON.stringify({
+        revisionId: rev.id,
+        rolledBackToVersion: rev.version,
+        newVersion: result.version,
+        filename: rev.filename,
+      }),
+    },
+  });
+
   return NextResponse.json(result);
 }
