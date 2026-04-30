@@ -8,6 +8,8 @@ import { docStatusLabel, DOC_STATUS_TONE } from "@/lib/labels";
 import { CaseActionsBar } from "@/components/CaseActionsBar";
 import { AiCaseAssistant } from "@/components/AiCaseAssistant";
 import { CaseVisitsBlock, VisitView } from "@/components/CaseVisitsBlock";
+import { CaseFilesBlock } from "@/components/CaseFilesBlock";
+import { caseFiles } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,10 @@ export default async function CaseDetail(
     },
   });
   if (!caseRec) notFound();
+
+  // Все файлы дела для блока «Все файлы дела» — отдельный запрос, чтобы
+  // правильно прокинуть relPath относительно STORAGE_DIR.
+  const allFiles = await caseFiles(id);
 
   const state = caseRec.state as CaseState;
   const tone = (STATE_TONE[state] ?? "neutral") as PillTone;
@@ -293,6 +299,11 @@ export default async function CaseDetail(
                 ))}
               </ul>
             )}
+          </div>
+
+          {/* Все файлы дела — единый список со скачиванием и историей версий */}
+          <div className="mt-6">
+            <CaseFilesBlock caseId={id} files={allFiles} />
           </div>
 
           {/* visits */}

@@ -77,6 +77,92 @@ function deadlineLabel(key: string): string {
   } as Record<string, string>)[key] || key;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+//  Файлы дела — единая агрегация всех файлов, привязанных к делу.
+//  Используется в блоке «Все файлы дела» на /cases/[id] и в ZIP-выгрузке.
+// ─────────────────────────────────────────────────────────────────────
+
+export interface CaseFile {
+  kind: "incoming" | "document" | "signature" | "edo" | "visit_photo";
+  label: string;       // отображаемое имя
+  relPath: string;     // путь относительно STORAGE_ROOT — для /api/files/download
+  ownerId: string;     // id владельца (для истории версий)
+}
+
+export async function caseFiles(caseId: string): Promise<CaseFile[]> {
+  const c = await prisma.case.findUnique({
+    where: { id: caseId },
+    include: {
+      incomingLetter: true,
+      documents: { orderBy: { createdAt: "asc" } },
+      visits: { orderBy: { visitDate: "asc" } },
+    },
+  });
+  if (!c) return [];
+
+  const root = (process.env.STORAGE_DIR || "/app/storage").replace(/\/+$/, "") + "/";
+  const trim = (full: string | null | undefined): string => {
+    if (!full) return "";
+    if (full.startsWith(root)) return full.slice(root.length);
+    // На всякий случай если путь с виндовыми слэшами или относительный
+    return full.replace(/^[/\\]+/, "");
+  };
+
+  const out: CaseFile[] = [];
+
+  if (c.incomingLetter?.attachedFile) {
+    out.push({
+      kind: "incoming",
+      label: `Входящее ${c.incomingLetter.number}`,
+      relPath: trim(c.incomingLetter.attachedFile),
+      ownerId: c.incomingLetter.id,
+    });
+  }
+
+  for (const d of c.documents) {
+    if (d.renderedDocxPath) {
+      const title = d.outgoingNumber || d.templateKind;
+      out.push({
+        kind: "document",
+        label: `${title}${d.subject ? ` — ${d.subject}` : ""}`,
+        relPath: trim(d.renderedDocxPath),
+        ownerId: d.id,
+      });
+    }
+    if (d.signaturePath) {
+      out.push({
+        kind: "signature",
+        label: `Подпись к ${d.outgoingNumber || d.templateKind}`,
+        relPath: trim(d.signaturePath),
+        ownerId: d.id,
+      });
+    }
+    if (d.edoPackagePath) {
+      out.push({
+        kind: "edo",
+        label: `ЭДО-пакет ${d.outgoingNumber || d.templateKind}`,
+        relPath: trim(d.edoPackagePath),
+        ownerId: d.id,
+      });
+    }
+  }
+
+  for (const v of c.visits) {
+    const photos = safeJSON<Array<{ path: string }>>(v.photos, []);
+    photos.forEach((p, i) => {
+      if (!p?.path) return;
+      out.push({
+        kind: "visit_photo",
+        label: `Фото с выезда ${v.visitDate.toISOString().slice(0, 10)} #${i + 1}`,
+        relPath: trim(p.path),
+        ownerId: v.id,
+      });
+    });
+  }
+
+  return out.filter((f) => f.relPath);
+}
+
 /** Дашбордные виджеты */
 export async function dashboardData() {
   const [allRows, incomingNoCase, todayVisits, weekPlannedVisits] = await Promise.all([
