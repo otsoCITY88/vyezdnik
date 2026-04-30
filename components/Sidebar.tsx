@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOutAction } from "@/lib/auth-actions";
 
 const groups: Array<{ title: string; items: Array<{ href: string; label: string; badge?: string; badgeKind?: "amber" | "ghost" }> }> = [
   {
@@ -27,7 +28,15 @@ const groups: Array<{ title: string; items: Array<{ href: string; label: string;
   },
 ];
 
-export function Sidebar() {
+export type SidebarUser = {
+  fullName: string;
+  shortName: string | null;
+  position: string | null;
+  initials: string;
+  isAdmin: boolean;
+};
+
+export function Sidebar({ user }: { user: SidebarUser }) {
   const pathname = usePathname();
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
@@ -77,13 +86,24 @@ export function Sidebar() {
             className="display text-[18px] w-9 h-9 grid place-items-center"
             style={{ background: "var(--ink)", color: "var(--paper)" }}
           >
-            МП
+            {user.initials}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] truncate">М.Ю. Пальков</div>
-            <div className="micro-2 text-muted truncate">Главный спец.</div>
+            <div className="text-[13px] truncate">{user.shortName || user.fullName}</div>
+            <div className="micro-2 text-muted truncate">
+              {user.isAdmin ? "Администратор" : (user.position || "—")}
+            </div>
           </div>
-          <a href="/api/auth/signout" className="text-[14px] text-muted hover:text-ink" title="Выйти">⎋</a>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="text-[14px] text-muted hover:text-ink"
+              title="Выйти"
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            >
+              ⎋
+            </button>
+          </form>
         </div>
       </div>
     </aside>
