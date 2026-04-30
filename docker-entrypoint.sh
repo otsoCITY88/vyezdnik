@@ -13,23 +13,27 @@ echo "  NODE_ENV       = ${NODE_ENV}"
 echo "  DATABASE_URL   = ${DATABASE_URL}"
 echo "  STORAGE_DIR    = ${STORAGE_DIR}"
 
+# Прямые пути к бинарникам — не зависим от node_modules/.bin/ симлинков
+PRISMA_BIN="/app/node_modules/prisma/build/index.js"
+TSX_BIN="/app/node_modules/tsx/dist/cli.mjs"
+
 # Первый запуск: применяем схему и засеиваем демо-данными
 if [ ! -f "$DB_FILE" ]; then
   echo "▸ БД не найдена — создаю схему и сидую демо-данные…"
-  npx prisma db push --skip-generate --accept-data-loss
+  node "$PRISMA_BIN" db push --skip-generate --accept-data-loss
   if [ "${SEED_ON_INIT:-true}" = "true" ]; then
-    npx tsx prisma/seed.ts
+    node "$TSX_BIN" prisma/seed.ts
   fi
   echo "▸ Готово."
 else
   echo "▸ БД уже существует — применяю миграции схемы (если есть)…"
-  npx prisma db push --skip-generate || true
+  node "$PRISMA_BIN" db push --skip-generate || true
 fi
 
 # Кастомные .docx-шаблоны лежат в /app/templates — пересобираем если их нет
 if [ ! -f "/app/templates/T3_letter_to_spo_remedy.docx" ]; then
   echo "▸ Пересборка .docx-шаблонов…"
-  npx tsx scripts/build-templates.ts
+  node "$TSX_BIN" scripts/build-templates.ts
 fi
 
 echo "▸ Запуск сервера…"

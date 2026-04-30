@@ -70,6 +70,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/resolve-pkg-maps ./n
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/docx ./node_modules/docx
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@xmldom ./node_modules/@xmldom
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/jszip ./node_modules/jszip
+# .bin/* — симлинки на бинарники (prisma, tsx и др.). Без них npx ищет не там.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin ./node_modules/.bin
 
 # Скрипт первичной инициализации (db push + seed если БД пустая)
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
