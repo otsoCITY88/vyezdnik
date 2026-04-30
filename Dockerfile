@@ -51,11 +51,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Prisma — нужен schema, .docx шаблоны, скрипты миграции/сидера, dev cli
+# Prisma schema, .docx шаблоны, скрипты миграции/сидера/билда шаблонов
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/templates ./templates
 COPY --from=builder --chown=nextjs:nodejs /app/files ./files
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+# lib/ нужен tsx-скриптам: prisma/seed.ts → ../lib/format, scripts/build-templates.ts и т.д.
+COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
+# tsconfig для @/* алиасов tsx
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 
 # Prisma CLI + tsx нужны в рантайме для seed/db push (берём из builder, где сделан prisma generate)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
